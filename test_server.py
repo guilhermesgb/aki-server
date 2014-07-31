@@ -141,16 +141,6 @@ class TestServerEndpoints(unittest.TestCase):
             "presence fail (this username is taken)")
         self.assertEqual(response['code'], "error")
 
-    def test_014_unauthenticated_after_server_crash(self):
-        stop_server()
-        start_server()
-        response = prepare_and_send_request('GET', '/presence',
-            client='username')
-        response = perform_basic_assertions(self, response)
-        self.assertEqual(response['server'],
-            "you must send presence")
-        self.assertEqual(response['code'], "error")
-
     @classmethod
     def tearDownClass(cls):
         stop_server()
