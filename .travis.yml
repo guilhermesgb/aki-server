@@ -1,9 +1,14 @@
 language: python
 python:
-  - "2.7"
+- '2.7'
 before_install:
-  - psql -c 'create database travis_ci_test;' -U postgres
-  - export DATABASE_URL=postgresql:///travis_ci_test
-  - gem install foreman
+- psql -c 'create database travis_ci_test;' -U postgres
+- export DATABASE_URL=postgresql:///travis_ci_test
+- gem install foreman
 install: pip install -r requirements.txt --use-mirrors
 script: python test_server.py
+deploy:
+  provider: heroku
+  api_key:
+    secure: gOw2qgg/vGYnynZsss/3ttQ5n7FkXHzfei3HxdwyX8D45D5m4Y/9GlMkXHbz5szqrpqYNFCR5SiI459lc5n9LD7DFh6W2EzIF07MgGGIFmirr8b74FCpKrdFuZTRzlhDTX9T2uHMHTNKUDTAmPO0of/7chqp1HnKeLUOQUsrPUQ=
+  app: lespi-server
