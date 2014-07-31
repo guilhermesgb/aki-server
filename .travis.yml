@@ -1,0 +1,9 @@
+language: python
+python:
+  - "2.7"
+before_install:
+  - psql -c 'create database travis_ci_test;' -U postgres
+  - export DATABASE_URL=postgresql:///travis_ci_test
+  - gem install foreman
+install: pip install -r requirements.txt --use-mirrors
+script: python test_server.py
