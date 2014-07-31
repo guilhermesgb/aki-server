@@ -194,7 +194,7 @@ def do_send_message(sender, message):
     data = {
         "from": sender,
         "message": message,
-        "action": "com.lespi.aki.NEW_MESSAGE",
+        "action": "com.lespi.aki.receivers.INCOMING_MESSAGE",
     }
 
     payload = {
