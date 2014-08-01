@@ -133,14 +133,6 @@ class TestServerEndpoints(unittest.TestCase):
             "you are username")
         self.assertEqual(response['code'], "ok")
 
-    def test_013_someone_else_authenticates_as_me(self):
-        response = prepare_and_send_request('POST', '/presence/username',
-            client='another_username')
-        response = perform_basic_assertions(self, response)
-        self.assertEqual(response['server'],
-            "presence fail (this username is taken)")
-        self.assertEqual(response['code'], "error")
-
     @classmethod
     def tearDownClass(cls):
         stop_server()
