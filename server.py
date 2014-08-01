@@ -146,19 +146,15 @@ def send_presence(username):
 
         User(username)
         u = User.get_stored(username)
-        if ( u.taken ):
-            logging.info("Cannot use this username now, it is currently taken")
-            response = make_response(json.dumps({'server':'presence fail (this username is taken)', 'code':'error'}), 200)
+        if ( login_user(User.get(username), remember=True) ):
+            u.taken = True
+            database.session.add(u)
+            database.session.commit()
+            logging.info("Presence sent ok (by logging)")
+            response = make_response(json.dumps({'server':'presence sent (just authenticated)', 'code':'ok'}), 200)
         else:
-            if ( login_user(User.get(username), remember=True) ):
-                u.taken = True
-                database.session.add(u)
-                database.session.commit()
-                logging.info("Presence sent ok (by logging)")
-                response = make_response(json.dumps({'server':'presence sent (just authenticated)', 'code':'ok'}), 200)
-            else:
-                logging.info("Presence sent not ok (login failed)")
-                response = make_response(json.dumps({'server':'presence fail (login fail)', 'code':'error'}), 200)
+            logging.info("Presence sent not ok (login failed)")
+            response = make_response(json.dumps({'server':'presence fail (login fail)', 'code':'error'}), 200)
 
     response.headers["content-type"] = "application/json"
     return response
