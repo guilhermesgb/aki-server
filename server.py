@@ -247,7 +247,13 @@ def enter_chat():
     username = current_user.get_id()
     chat_room = "chat_room"
 
-    response = make_response(json.dumps({'server':'{} is in chat room {}'.format(username, chat_room), 'code':'ok', 'chat_room': chat_room}), 200)
+    status = {
+        'server': '{} is in chat room {}'.format(username, chat_room),
+        'code': 'ok',
+        'chat_room': chat_room
+    }
+
+    response = make_response(json.dumps(status), 200)
     response.headers["Content-Type"] = "application/json"
     return response
 
