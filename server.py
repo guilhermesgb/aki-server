@@ -177,7 +177,7 @@ def send_leave():
     response.headers["Content-Type"] = "application/json"
     return response
 
-def do_send_message(sender, message):
+def do_send_message(sender, chat_room, message):
 
     database.session = database.create_scoped_session()
 
@@ -195,7 +195,7 @@ def do_send_message(sender, message):
 
     payload = {
         "channels": [
-            "chatroom"
+            chat_room
         ],      
         "data" : data
     }
@@ -230,8 +230,15 @@ def send_message():
         response.headers["Content-Type"] = "application/json"
         return response
 
+    chat_room = data.get('chat_room', None)
+
+    if ( chat_room == None ):
+        response = make_response(json.dumps({'server':'chat_room cannot be ommitted!', 'code':'error'}), 200)
+        response.headers["Content-Type"] = "application/json"
+        return response
+
     p = Process(target=do_send_message,
-        args=(current_user.get_id(), message))
+        args=(current_user.get_id(), chat_room, message))
     p.daemon = True
     p.start()
 
