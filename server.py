@@ -240,6 +240,17 @@ def send_message():
     response.headers["content-type"] = "application/json"
     return response
 
+@server.route('/chat', methods=['POST'])
+@login_required
+def enter_chat():
+
+    username = current_user.get_id()
+    chat_room = "chat_room"
+
+    response = make_response(json.dumps({'server':'{} is in chat room {}'.format(username, chat_room), 'code':'ok'}), 200)
+    response.headers["Content-Type"] = "application/json"
+    return response
+
 if __name__ == "__main__":
 
     port = int(os.environ.get("PORT", 5000))
