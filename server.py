@@ -141,7 +141,12 @@ def send_presence(username):
             response = make_response(json.dumps({'server':'presence fail (you are someone else)', 'code':'error'}), 200)
         else:
             logging.info("Presence sent ok")
-            response = make_response(json.dumps({'server':'presence sent (already authenticated)', 'code':'ok'}), 200)
+            chat_room = get_chat()
+            response = make_response(json.dumps({
+                           'server':'presence sent (already authenticated)',
+                           'chat_room': chat_room,
+                           'code':'ok'
+                       }), 200)
     else:
 
         User(username)
@@ -151,7 +156,12 @@ def send_presence(username):
             database.session.add(u)
             database.session.commit()
             logging.info("Presence sent ok (by logging)")
-            response = make_response(json.dumps({'server':'presence sent (just authenticated)', 'code':'ok'}), 200)
+            chat_room = get_chat()
+            response = make_response(json.dumps({
+                           'server':'presence sent (just authenticated)',
+                           'chat_room': chat_room,
+                           'code':'ok'
+                       }), 200)
         else:
             logging.info("Presence sent not ok (login failed)")
             response = make_response(json.dumps({'server':'presence fail (login fail)', 'code':'error'}), 200)
@@ -247,22 +257,9 @@ def send_message():
     response.headers["content-type"] = "application/json"
     return response
 
-@server.route('/chat', methods=['POST'])
-@login_required
-def enter_chat():
-
-    username = current_user.get_id()
-    chat_room = "chat_room"
-
-    status = {
-        'server': '{} is in chat room {}'.format(username, chat_room),
-        'code': 'ok',
-        'chat_room': chat_room
-    }
-
-    response = make_response(json.dumps(status), 200)
-    response.headers["Content-Type"] = "application/json"
-    return response
+def get_chat():
+    # for now simply returning global chat room (id: chat_room)
+    return "chat_room"
 
 if __name__ == "__main__":
 
