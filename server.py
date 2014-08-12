@@ -259,7 +259,7 @@ def send_message():
 
 def get_chat():
     # for now simply returning global chat room (id: chat_room)
-    return "chat_room"
+    return "chat_room_for_me"
 
 if __name__ == "__main__":
 
