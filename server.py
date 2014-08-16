@@ -201,8 +201,8 @@ def send_presence(username):
 
             p = Process(target=do_send_presence,
                 args=(username, chat_room, anonymous, nickname))
-                p.daemon = True
-                p.start()
+            p.daemon = True
+            p.start()
 
             response = make_response(json.dumps({
                            'server':'presence sent (already authenticated)',
@@ -222,8 +222,8 @@ def send_presence(username):
 
             p = Process(target=do_send_presence,
                 args=(username, chat_room, anonymous, nickname))
-                p.daemon = True
-                p.start()
+            p.daemon = True
+            p.start()
 
             response = make_response(json.dumps({
                            'server':'presence sent (just authenticated)',
