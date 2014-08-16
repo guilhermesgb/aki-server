@@ -131,8 +131,64 @@ def get_presence():
     response.headers["Content-Type"] = "application/json"
     return response
 
+def do_send_presence(sender, chat_room, anonymous, nickname):
+
+    database.session = database.create_scoped_session()
+
+    headers = {
+        "X-Parse-Application-Id": os.environ.get("PARSE_APPLICATION_ID", None),
+        "X-Parse-REST-API-Key": os.environ.get("PARSE_REST_API_KEY", None),
+        "Content-Type":"application/json"
+    }
+
+    data = {
+        "from": sender,
+        "anonymous": anonymous,
+        "nickname": nickname,
+        "action": "com.lespi.aki.receivers.INCOMING_USER_INFO_UPDATE",
+    }
+
+    payload = {
+        "channels": [
+            chat_room
+        ], 
+        "data" : data
+    }
+
+    response = send_request('POST', "https://api.parse.com/1/push",
+         payload=payload, headers=headers) 
+
+    if ( response["success"] ):
+        logging.info("Message sent to Parse push notifications system")
+    else:
+        logging.info("Cannot send message to Parse push notifications system")
+
+
 @server.route('/presence/<username>', methods=['POST'])
 def send_presence(username):
+
+    data = request.json
+    if ( data == None ):
+        response = make_response(json.dumps({'server':'payload must be valid json', 'code':'error'}), 200)
+        response.headers["Content-Type"] = "application/json"
+        return response
+    data = dict(data)
+    if ( data == None ):
+        response = make_response(json.dumps({'server':'payload must be valid json', 'code':'error'}), 200)
+        response.headers["Content-Type"] = "application/json"
+        return response
+
+    anonymous = data.get('anonymous', None)
+    if ( anonymous == None ):
+        response = make_response(json.dumps({'server':'anonymous field cannot be ommitted!', 'code':'error'}), 200)
+        response.headers["Content-Type"] = "application/json"
+        return response
+
+    nickname = data.get('nickname', None)
+    if ( nickname == None ):
+        response = make_response(json.dumps({'server':'nickname field cannot be ommitted!', 'code':'error'}), 200)
+        response.headers["Content-Type"] = "application/json"
+        return response
 
     if ( current_user.is_authenticated() ):
         logging.info("You are already authenticated")
@@ -142,6 +198,12 @@ def send_presence(username):
         else:
             logging.info("Presence sent ok")
             chat_room = get_chat()
+
+            p = Process(target=do_send_presence,
+                args=(username, chat_room, anonymous, nickname))
+                p.daemon = True
+                p.start()
+
             response = make_response(json.dumps({
                            'server':'presence sent (already authenticated)',
                            'chat_room': chat_room,
@@ -157,6 +219,12 @@ def send_presence(username):
             database.session.commit()
             logging.info("Presence sent ok (by logging)")
             chat_room = get_chat()
+
+            p = Process(target=do_send_presence,
+                args=(username, chat_room, anonymous, nickname))
+                p.daemon = True
+                p.start()
+
             response = make_response(json.dumps({
                            'server':'presence sent (just authenticated)',
                            'chat_room': chat_room,
@@ -236,14 +304,14 @@ def send_message():
     message = data.get('message', None)
 
     if ( message == None ):
-        response = make_response(json.dumps({'server':'message cannot be ommitted!', 'code':'error'}), 200)
+        response = make_response(json.dumps({'server':'message field cannot be ommitted!', 'code':'error'}), 200)
         response.headers["Content-Type"] = "application/json"
         return response
 
     chat_room = data.get('chat_room', None)
 
     if ( chat_room == None ):
-        response = make_response(json.dumps({'server':'chat_room cannot be ommitted!', 'code':'error'}), 200)
+        response = make_response(json.dumps({'server':'chat_room field cannot be ommitted!', 'code':'error'}), 200)
         response.headers["Content-Type"] = "application/json"
         return response
 
