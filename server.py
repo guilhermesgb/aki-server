@@ -131,7 +131,7 @@ def get_presence():
     response.headers["Content-Type"] = "application/json"
     return response
 
-def do_send_presence(sender, chat_room, anonymous, nickname):
+def do_send_presence(sender, chat_room, anonymous, nickname, location):
 
     database.session = database.create_scoped_session()
 
@@ -145,6 +145,7 @@ def do_send_presence(sender, chat_room, anonymous, nickname):
         "from": sender,
         "anonymous": anonymous,
         "nickname": nickname,
+        "location": location,
         "action": "com.lespi.aki.receivers.INCOMING_USER_INFO_UPDATE",
     }
 
@@ -190,6 +191,12 @@ def send_presence(username):
         response.headers["Content-Type"] = "application/json"
         return response
 
+    location = data.get('location', None)
+    if ( nickname == None ):
+        response = make_response(json.dumps({'server':'location field cannot be ommitted!', 'code':'error'}), 200)
+        response.headers["Content-Type"] = "application/json"
+        return response
+
     if ( current_user.is_authenticated() ):
         logging.info("You are already authenticated")
         if ( current_user.get_id() != username ):
@@ -200,7 +207,7 @@ def send_presence(username):
             chat_room = get_chat()
 
             p = Process(target=do_send_presence,
-                args=(username, chat_room, anonymous, nickname))
+                args=(username, chat_room, anonymous, nickname, location))
             p.daemon = True
             p.start()
 
@@ -221,7 +228,7 @@ def send_presence(username):
             chat_room = get_chat()
 
             p = Process(target=do_send_presence,
-                args=(username, chat_room, anonymous, nickname))
+                args=(username, chat_room, anonymous, nickname, location))
             p.daemon = True
             p.start()
 
