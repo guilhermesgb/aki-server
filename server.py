@@ -210,7 +210,7 @@ def send_presence(username):
         return response
 
     user_data = {
-        "sender": username,
+        "from": username,
         "first_name": first_name,
         "full_name": full_name,
         "gender": gender,
