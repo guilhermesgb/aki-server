@@ -131,7 +131,7 @@ def get_presence():
     response.headers["Content-Type"] = "application/json"
     return response
 
-def do_send_presence(chat_room, data):
+def do_send_presence(chat_room, user_data):
 
     database.session = database.create_scoped_session()
 
@@ -141,13 +141,13 @@ def do_send_presence(chat_room, data):
         "Content-Type":"application/json"
     }
 
-    data["action"] = "com.lespi.aki.receivers.INCOMING_USER_INFO_UPDATE"
+    user_data["action"] = "com.lespi.aki.receivers.INCOMING_USER_INFO_UPDATE"
 
     payload = {
         "channels": [
             chat_room
         ], 
-        "data" : data
+        "data" : user_data
     }
 
     response = send_request('POST', "https://api.parse.com/1/push",
@@ -173,33 +173,26 @@ def send_presence(username):
         response.headers["Content-Type"] = "application/json"
         return response
 
+    user_data = {}
+
     first_name = data.get('first_name', None)
     if ( first_name == None ):
-        response = make_response(json.dumps({'server':'first_name field cannot be ommitted!', 'code':'error'}), 200)
-        response.headers["Content-Type"] = "application/json"
-        return response
+        user_data["first_name"] = first_name
 
     full_name = data.get('full_name', None)
     if ( full_name == None ):
-        response = make_response(json.dumps({'server':'full_name field cannot be ommitted!', 'code':'error'}), 200)
-        response.headers["Content-Type"] = "application/json"
-        return response
+        user_data["full_name"] = full_name
 
     gender = data.get('gender', None)
     if ( gender == None ):
-        response = make_response(json.dumps({'server':'gender field cannot be ommitted!', 'code':'error'}), 200)
-        response.headers["Content-Type"] = "application/json"
-        return response
+        user_data["gender"] = gender
+
+    nickname = data.get('nickname', None)
+        user_data["nickname"] = nickname
 
     anonymous = data.get('anonymous', None)
     if ( anonymous == None ):
         response = make_response(json.dumps({'server':'anonymous field cannot be ommitted!', 'code':'error'}), 200)
-        response.headers["Content-Type"] = "application/json"
-        return response
-
-    nickname = data.get('nickname', None)
-    if ( nickname == None ):
-        response = make_response(json.dumps({'server':'nickname field cannot be ommitted!', 'code':'error'}), 200)
         response.headers["Content-Type"] = "application/json"
         return response
 
@@ -209,15 +202,9 @@ def send_presence(username):
         response.headers["Content-Type"] = "application/json"
         return response
 
-    user_data = {
-        "from": username,
-        "first_name": first_name,
-        "full_name": full_name,
-        "gender": gender,
-        "anonymous": anonymous,
-        "nickname": nickname,
-        "location": location
-    }
+    user_data["from"] = username
+    user_data["anonymous"] = anonymous
+    user_data["location"] = location
 
     if ( current_user.is_authenticated() ):
         logging.info("You are already authenticated")
