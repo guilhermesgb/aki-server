@@ -188,6 +188,7 @@ def send_presence(username):
         user_data["gender"] = gender
 
     nickname = data.get('nickname', None)
+    if ( nickname == None ):
         user_data["nickname"] = nickname
 
     anonymous = data.get('anonymous', None)
