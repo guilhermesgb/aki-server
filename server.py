@@ -176,19 +176,19 @@ def send_presence(username):
     user_data = {}
 
     first_name = data.get('first_name', None)
-    if ( first_name == None ):
+    if ( first_name != None ):
         user_data["first_name"] = first_name
 
     full_name = data.get('full_name', None)
-    if ( full_name == None ):
+    if ( full_name != None ):
         user_data["full_name"] = full_name
 
     gender = data.get('gender', None)
-    if ( gender == None ):
+    if ( gender != None ):
         user_data["gender"] = gender
 
     nickname = data.get('nickname', None)
-    if ( nickname == None ):
+    if ( nickname != None ):
         user_data["nickname"] = nickname
 
     anonymous = data.get('anonymous', None)
@@ -198,7 +198,7 @@ def send_presence(username):
         return response
 
     location = data.get('location', None)
-    if ( nickname == None ):
+    if ( location == None ):
         response = make_response(json.dumps({'server':'location field cannot be ommitted!', 'code':'error'}), 200)
         response.headers["Content-Type"] = "application/json"
         return response
