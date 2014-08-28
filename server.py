@@ -166,13 +166,18 @@ def do_send_presence(chat_room, user_data):
 @server.route('/presence/<username>', methods=['POST'])
 def send_presence(username):
 
-    data = request.json
-    if ( data == None ):
-        response = make_response(json.dumps({'server':'payload must be valid json', 'code':'error'}), 200)
-        response.headers["Content-Type"] = "application/json"
-        return response
-    data = dict(data)
-    if ( data == None ):
+    try:
+        data = request.json
+        if ( data == None ):
+            response = make_response(json.dumps({'server':'payload must be valid json', 'code':'error'}), 200)
+            response.headers["Content-Type"] = "application/json"
+            return response
+        data = dict(data)
+        if ( data == None ):
+            response = make_response(json.dumps({'server':'payload must be valid json', 'code':'error'}), 200)
+            response.headers["Content-Type"] = "application/json"
+            return response
+    except:
         response = make_response(json.dumps({'server':'payload must be valid json', 'code':'error'}), 200)
         response.headers["Content-Type"] = "application/json"
         return response
@@ -311,13 +316,18 @@ def do_send_message(sender, chat_room, message):
 @login_required
 def send_message():
 
-    data = request.json
-    if ( data == None ):
-        response = make_response(json.dumps({'server':'payload must be valid json', 'code':'error'}), 200)
-        response.headers["Content-Type"] = "application/json"
-        return response
-    data = dict(data)
-    if ( data == None ):
+    try:
+        data = request.json
+        if ( data == None ):
+            response = make_response(json.dumps({'server':'payload must be valid json', 'code':'error'}), 200)
+            response.headers["Content-Type"] = "application/json"
+            return response
+        data = dict(data)
+        if ( data == None ):
+            response = make_response(json.dumps({'server':'payload must be valid json', 'code':'error'}), 200)
+            response.headers["Content-Type"] = "application/json"
+            return response
+    except:
         response = make_response(json.dumps({'server':'payload must be valid json', 'code':'error'}), 200)
         response.headers["Content-Type"] = "application/json"
         return response
@@ -359,16 +369,22 @@ def shutdown():
         response.headers["Content-Type"] = "application/json"
         return response
 
-    data = request.json
-    if ( data == None ):
+    try:
+        data = request.json
+        if ( data == None ):
+            response = make_response(json.dumps({'server':'payload must be valid json', 'code':'error'}), 200)
+            response.headers["Content-Type"] = "application/json"
+            return response
+        data = dict(data)
+        if ( data == None ):
+            response = make_response(json.dumps({'server':'payload must be valid json', 'code':'error'}), 200)
+            response.headers["Content-Type"] = "application/json"
+            return response
+    except:
         response = make_response(json.dumps({'server':'payload must be valid json', 'code':'error'}), 200)
         response.headers["Content-Type"] = "application/json"
         return response
-    data = dict(data)
-    if ( data == None ):
-        response = make_response(json.dumps({'server':'payload must be valid json', 'code':'error'}), 200)
-        response.headers["Content-Type"] = "application/json"
-        return response
+
 
     provided = data.get("authorization", None)
     if ( provided == None ):
