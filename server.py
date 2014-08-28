@@ -119,7 +119,8 @@ def get_presence():
 
     status = {
         'server' : 'you must send presence',
-        'code' : 'error'
+        'code' : 'ok',
+        'username' : None
     }
 
     if ( current_user.is_authenticated() ):
@@ -132,6 +133,9 @@ def get_presence():
     return response
 
 def do_send_presence(chat_room, user_data):
+
+    if ( chat_room == None ):
+        return
 
     database.session = database.create_scoped_session()
 
@@ -254,9 +258,9 @@ def send_presence(username):
     response.headers["content-type"] = "application/json"
     return response
 
-@server.route('/leave', methods=['POST'])
+@server.route('/inactive', methods=['POST'])
 @login_required
-def send_leave():
+def send_inactive():
 
     username = current_user.get_id()
 
@@ -345,6 +349,48 @@ def send_message():
 def get_chat():
     # for now simply returning global chat room (id: chat_room)
     return "chat_room_for_me"
+
+@server.route('/shutdown', methods=['POST'])
+def shutdown():
+
+    auth = os.environ.get("SHUTDOWN_AUTHORIZATION", None)
+    if ( auth == None ):
+        response = make_response(json.dumps({'server':'shutdown not allowed', 'code':'error'}), 200)
+        response.headers["Content-Type"] = "application/json"
+        return response
+
+    data = request.json
+    if ( data == None ):
+        response = make_response(json.dumps({'server':'payload must be valid json', 'code':'error'}), 200)
+        response.headers["Content-Type"] = "application/json"
+        return response
+    data = dict(data)
+    if ( data == None ):
+        response = make_response(json.dumps({'server':'payload must be valid json', 'code':'error'}), 200)
+        response.headers["Content-Type"] = "application/json"
+        return response
+
+    provided = data.get("authorization", None)
+    if ( provided == None ):
+        response = make_response(json.dumps({'server':'you are unauthorized', 'code':'error'}), 200)
+        response.headers["Content-Type"] = "application/json"
+        return response
+
+    if ( provided != auth ):
+        response = make_response(json.dumps({'server':'you are unauthorized', 'code':'error'}), 200)
+        response.headers["Content-Type"] = "application/json"
+        return response
+
+    func = request.environ.get('werkzeug.server.shutdown')
+    if func is None:
+        response = make_response(json.dumps({'server':'shutdown not allowed', 'code':'error'}), 200)
+        response.headers["Content-Type"] = "application/json"
+        return response
+
+    func()
+    response = make_response(json.dumps({'server':'shutting down...', 'code':'ok'}), 200)
+    response.headers["Content-Type"] = "application/json"
+    return response
 
 if __name__ == "__main__":
 
