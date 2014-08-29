@@ -7,7 +7,7 @@ from sqlalchemy.orm.exc import NoResultFound, MultipleResultsFound
 from request_utils import send_request
 
 from multiprocessing import Process
-import os, json, logging, math, sys
+import os, json, logging, math, sys, uuid
 
 logging.basicConfig(level=logging.DEBUG)
 
@@ -26,8 +26,8 @@ class StoredUser(database.Model):
     uid = database.Column(database.String(20), unique=True)
     taken = database.Column(database.Boolean)
 
-    def __init__(self, username, taken=False):
-        self.uid = username
+    def __init__(self, user_id, taken=False):
+        self.uid = user_id
         self.taken = taken
 
     def __repr__(self):
@@ -37,24 +37,24 @@ class User(UserMixin):
 
     users = {}
 
-    def __init__(self, username, active=True):
+    def __init__(self, user_id, active=True):
 
-        self.uid = username
+        self.uid = user_id
         self.active = active
 
         try:
-            StoredUser.query.filter(StoredUser.uid == username).one()
+            StoredUser.query.filter(StoredUser.uid == user_id).one()
         except NoResultFound:
-            database.session.add(StoredUser(username))
+            database.session.add(StoredUser(user_id))
             database.session.commit()
         except MultipleResultsFound:
             for user in StoredUser.query.all():
                 database.session.remove(user)
-            database.session.add(StoredUser(username))
+            database.session.add(StoredUser(user_id))
             database.session.commit()
 
-        if ( not username in User.users ):
-            User.users[username] = self
+        if ( not user_id in User.users ):
+            User.users[user_id] = self
 
     def is_authenticated(self):
         return True
@@ -89,13 +89,13 @@ class ChatRoom:
     user2chat = {}
 
     def __init__(self, location):
-        self.ids = [ os.urandom(24) ]
+        self.ids = [ str(uuid.uuid4()) ]
         self.members = []
-        self.radius = MIN_RADIUS
+        self.radius = ChatRoom.MIN_RADIUS
         self.center = location
         ChatRoom.chats[self.ids[0]] = self
 
-    def add_user(user_id, location):
+    def add_user(self, user_id, location):
         if (not ChatRoom.user2chat.get(user_id, False) ):
             self.members.append({
                 "id": user_id,
@@ -139,21 +139,23 @@ class ChatRoom:
     def get_chat(user_id, location):
         if ( location == "unknown" ):
             return None, []
-        chat_id = at_chat(user_id)
+        chat_id = ChatRoom.at_chat(user_id)
         if ( chat_id ):
             return chat_id, ChatRoom.chats[chat_id].ids
         else:
             closest = ChatRoom.closest(location)
             if ( closest ):
+                closest.add_user(user_id, location)
                 return closest.ids[0], closest.ids
             else:
                 chat_room = ChatRoom(location)
+                chat_room.add_user(user_id, location)
                 return chat_room.ids[0], chat_room.ids
 
 
 @login_manager.user_loader
-def load_user(username):
-    return User.get(username)
+def load_user(user_id):
+    return User.get(user_id)
 
 @login_manager.unauthorized_handler
 def unauthorized():
@@ -172,12 +174,13 @@ def index():
     for user in User.users:
         u = User.get_stored(user)
         users.append({
-            'username' : u.uid,
+            'user_id' : u.uid,
             'status' : 'active' if u.taken else 'inactive'
         })
 
     chats = []
     for chat in ChatRoom.chats:
+        chat = ChatRoom.chats[chat]
         chats.append({
             "ids": chat.ids,
             "center": chat.center,
@@ -199,13 +202,13 @@ def get_presence():
     status = {
         'server' : 'you must send presence',
         'code' : 'ok',
-        'username' : None
+        'user_id' : None
     }
 
     if ( current_user.is_authenticated() ):
         status['server'] = 'you are {}'.format(current_user.get_id())
         status['code'] = 'ok'
-        status['username'] = current_user.get_id()
+        status['user_id'] = current_user.get_id()
 
     response = make_response(json.dumps(status), 200)
     response.headers["Content-Type"] = "application/json"
@@ -240,8 +243,8 @@ def do_send_presence(chat_ids, user_data):
         logging.info("Cannot send message to Parse push notifications system")
 
 
-@server.route('/presence/<username>', methods=['POST'])
-def send_presence(username):
+@server.route('/presence/<user_id>', methods=['POST'])
+def send_presence(user_id):
 
     try:
         data = request.json
@@ -289,18 +292,18 @@ def send_presence(username):
         response.headers["Content-Type"] = "application/json"
         return response
 
-    user_data["from"] = username
+    user_data["from"] = user_id
     user_data["anonymous"] = anonymous
     user_data["location"] = location
 
     if ( current_user.is_authenticated() ):
         logging.info("You are already authenticated")
-        if ( current_user.get_id() != username ):
-            logging.info("But you are "+current_user.get_id()+", not "+username)
+        if ( current_user.get_id() != user_id ):
+            logging.info("But you are "+current_user.get_id()+", not "+user_id)
             response = make_response(json.dumps({'server':'presence fail (you are someone else)', 'code':'error'}), 200)
         else:
             logging.info("Presence sent ok")
-            chat_room, chat_ids = ChatRoom.get_chat(username, location)
+            chat_room, chat_ids = ChatRoom.get_chat(user_id, location)
 
             p = Process(target=do_send_presence,
                 args=(chat_ids, user_data))
@@ -314,14 +317,14 @@ def send_presence(username):
                        }), 200)
     else:
 
-        User(username)
-        u = User.get_stored(username)
-        if ( login_user(User.get(username), remember=True) ):
+        User(user_id)
+        u = User.get_stored(user_id)
+        if ( login_user(User.get(user_id), remember=True) ):
             u.taken = True
             database.session.add(u)
             database.session.commit()
             logging.info("Presence sent ok (by logging)")
-            chat_room, chat_ids = ChatRoom.get_chat(username, location)
+            chat_room, chat_ids = ChatRoom.get_chat(user_id, location)
 
             p = Process(target=do_send_presence,
                 args=(chat_ids, user_data))
@@ -344,14 +347,14 @@ def send_presence(username):
 @login_required
 def send_inactive():
 
-    username = current_user.get_id()
+    user_id = current_user.get_id()
 
     if logout_user():
-        u = User.get_stored(username)
+        u = User.get_stored(user_id)
         u.taken = False
         database.session.add(u)
         database.session.commit()
-        response = make_response(json.dumps({'server':'{} just left'.format(username), 'code':'ok'}), 200)
+        response = make_response(json.dumps({'server':'{} just left'.format(user_id), 'code':'ok'}), 200)
     else:
         response = make_response(json.dumps({'server':'leaving failed somehow', 'code':'error'}), 200)
 
