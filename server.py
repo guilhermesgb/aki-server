@@ -7,7 +7,7 @@ from sqlalchemy.orm.exc import NoResultFound, MultipleResultsFound
 from request_utils import send_request
 
 from multiprocessing import Process
-import os, json, logging
+import os, json, logging, math, sys
 
 logging.basicConfig(level=logging.DEBUG)
 
@@ -82,6 +82,75 @@ class User(UserMixin):
             return u.do_get_stored()
         return None
 
+class ChatRoom:
+
+    MIN_RADIUS = 0.05 #in kmeters
+    chats = {}
+    user2chat = {}
+
+    def __init__(self, location):
+        self.ids = [ os.urandom(24) ]
+        self.members = []
+        self.radius = MIN_RADIUS
+        self.center = location
+        ChatRoom.chats[self.ids[0]] = self
+
+    def add_user(user_id, location):
+        if (not ChatRoom.user2chat.get(user_id, False) ):
+            self.members.append({
+                "id": user_id,
+                "location": location
+            })
+            ChatRoom.user2chat[user_id] = self.ids[0]
+
+    @staticmethod
+    def distance(location1, location2):
+        R = 6371
+        lat1 = math.radians(location1["lat"])
+        lat2 = math.radians(location2["lat"])
+        d_lat = math.radians(location2["lat"] - location1["lat"])
+        d_long = math.radians(location2["long"] - location1["long"])
+
+        a = math.pow(math.sin(d_lat/2), 2) + math.cos(lat1) * math.cos(lat2) * math.pow(math.sin(d_long/2), 2)
+        c = 2 * math.atan2(math.sqrt(a), math.sqrt(1 - a))
+        return R * c
+
+    @staticmethod
+    def closest(location):
+        closest = None
+        min_distance = sys.maxint
+        for chat_room in ChatRoom.chats:
+            chat_room = ChatRoom.chats[chat_room]
+            distance = ChatRoom.distance(location, chat_room.center) 
+            if ( distance < chat_room.radius ):
+                if ( not closest ):
+                    closest = chat_room
+                    min_distance = distance
+                elif distance < min_distance:
+                    closest = chat_room
+                    min_distance = distance
+        return closest
+
+    @staticmethod
+    def at_chat(user_id):
+        return ChatRoom.user2chat.get(user_id, None)
+
+    @staticmethod
+    def get_chat(user_id, location):
+        if ( location == "unknown" ):
+            return None, []
+        chat_id = at_chat(user_id)
+        if ( chat_id ):
+            return chat_id, ChatRoom.chats[chat_id].ids
+        else:
+            closest = ChatRoom.closest(location)
+            if ( closest ):
+                return closest.ids[0], closest.ids
+            else:
+                chat_room = ChatRoom(location)
+                return chat_room.ids[0], chat_room.ids
+
+
 @login_manager.user_loader
 def load_user(username):
     return User.get(username)
@@ -100,16 +169,26 @@ def unauthorized():
 def index():
 
     users = []
-    for user in User.users.keys():
+    for user in User.users:
         u = User.get_stored(user)
         users.append({
             'username' : u.uid,
             'status' : 'active' if u.taken else 'inactive'
         })
 
+    chats = []
+    for chat in ChatRoom.chats:
+        chats.append({
+            "ids": chat.ids,
+            "center": chat.center,
+            "radius": chat.radius,
+            "members": chat.members
+        })
+
     response = make_response(json.dumps({
         'server':'alive',
-        'users': users
+        'users': users,
+        'chats': chats
     }), 200)
     response.headers["Content-Type"] = "application/json"
     return response
@@ -132,9 +211,9 @@ def get_presence():
     response.headers["Content-Type"] = "application/json"
     return response
 
-def do_send_presence(chat_room, user_data):
+def do_send_presence(chat_ids, user_data):
 
-    if ( chat_room == None ):
+    if ( len(chat_ids) == 0 ):
         return
 
     database.session = database.create_scoped_session()
@@ -148,9 +227,7 @@ def do_send_presence(chat_room, user_data):
     user_data["action"] = "com.lespi.aki.receivers.INCOMING_USER_INFO_UPDATE"
 
     payload = {
-        "channels": [
-            chat_room
-        ], 
+        "channels": chat_ids, 
         "data" : user_data
     }
 
@@ -223,10 +300,10 @@ def send_presence(username):
             response = make_response(json.dumps({'server':'presence fail (you are someone else)', 'code':'error'}), 200)
         else:
             logging.info("Presence sent ok")
-            chat_room = get_chat()
+            chat_room, chat_ids = ChatRoom.get_chat(username, location)
 
             p = Process(target=do_send_presence,
-                args=(chat_room, user_data))
+                args=(chat_ids, user_data))
             p.daemon = True
             p.start()
 
@@ -244,10 +321,10 @@ def send_presence(username):
             database.session.add(u)
             database.session.commit()
             logging.info("Presence sent ok (by logging)")
-            chat_room = get_chat()
+            chat_room, chat_ids = ChatRoom.get_chat(username, location)
 
             p = Process(target=do_send_presence,
-                args=(chat_room, user_data))
+                args=(chat_ids, user_data))
             p.daemon = True
             p.start()
 
@@ -355,10 +432,6 @@ def send_message():
     response = make_response(json.dumps({'server':'message sent', 'code':'ok'}), 200)
     response.headers["content-type"] = "application/json"
     return response
-
-def get_chat():
-    # for now simply returning global chat room (id: chat_room)
-    return "chat_room_for_me"
 
 @server.route('/shutdown', methods=['POST'])
 def shutdown():
