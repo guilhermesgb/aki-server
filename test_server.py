@@ -55,7 +55,7 @@ class TestServerEndpoints(unittest.TestCase):
         self.assertEqual(response['server'],
             "you must send presence")
         self.assertEqual(response['code'], "ok")
-        self.assertEqual(response['username'], None)
+        self.assertEqual(response['user_id'], None)
 
     def test_002_authenticate(self):
         payload = {
@@ -80,7 +80,7 @@ class TestServerEndpoints(unittest.TestCase):
         self.assertEqual(response['server'],
             "you are _1234567890")
         self.assertEqual(response['code'], "ok")
-        self.assertEqual(response['username'], "_1234567890")
+        self.assertEqual(response['user_id'], "_1234567890")
 
     def test_004_authenticate_again(self):
         payload = {
@@ -105,7 +105,7 @@ class TestServerEndpoints(unittest.TestCase):
         self.assertEqual(response['server'],
             "you are _1234567890")
         self.assertEqual(response['code'], "ok")
-        self.assertEqual(response['username'], "_1234567890")
+        self.assertEqual(response['user_id'], "_1234567890")
 
     def test_006_authenticate_as_someone_else(self):
         payload = {
@@ -138,7 +138,7 @@ class TestServerEndpoints(unittest.TestCase):
         self.assertEqual(response['server'],
             "you must send presence")
         self.assertEqual(response['code'], "ok")
-        self.assertEqual(response['username'], None)
+        self.assertEqual(response['user_id'], None)
 
     def test_009_logout_after_logout(self):
         response = prepare_and_send_request('POST', '/inactive',
@@ -155,7 +155,7 @@ class TestServerEndpoints(unittest.TestCase):
         self.assertEqual(response['server'],
             "you must send presence")
         self.assertEqual(response['code'], "ok")
-        self.assertEqual(response['username'], None)
+        self.assertEqual(response['user_id'], None)
 
     def test_011_authenticate_again_after_logout(self):
         payload = {
@@ -180,7 +180,7 @@ class TestServerEndpoints(unittest.TestCase):
         self.assertEqual(response['server'],
             "you are _1234567890")
         self.assertEqual(response['code'], "ok")
-        self.assertEqual(response['username'], "_1234567890")
+        self.assertEqual(response['user_id'], "_1234567890")
 
     @classmethod
     def tearDownClass(cls):
