@@ -89,7 +89,7 @@ class ChatRoom:
     user2chat = {}
 
     def __init__(self, location):
-        self.ids = [ str(uuid.uuid4()) ]
+        self.ids = [ "chat-" + str(uuid.uuid4()) ]
         self.members = []
         self.radius = ChatRoom.MIN_RADIUS
         self.center = location
