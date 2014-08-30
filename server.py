@@ -6,7 +6,7 @@ from sqlalchemy.orm.exc import NoResultFound, MultipleResultsFound
 
 from request_utils import send_request
 
-from multiprocessing import Process
+from multiprocessing import Process, Pool
 import os, json, logging, math, sys, uuid
 
 logging.basicConfig(level=logging.DEBUG)
@@ -41,6 +41,7 @@ class User(UserMixin):
 
         self.uid = user_id
         self.active = active
+        self.skipped_chats = []
 
         try:
             StoredUser.query.filter(StoredUser.uid == user_id).one()
@@ -87,21 +88,97 @@ class ChatRoom:
     MIN_RADIUS = 0.05 #in kmeters
     chats = {}
     user2chat = {}
+    chat2chat = {}
 
     def __init__(self, location):
         self.ids = [ "chat-" + str(uuid.uuid4()) ]
-        self.members = []
-        self.radius = ChatRoom.MIN_RADIUS
+        self.members = {}
         self.center = location
+        self.radius = ChatRoom.MIN_RADIUS
         ChatRoom.chats[self.ids[0]] = self
 
+    def compute_center_and_radius(self):
+        n = len(self.members)
+        R = 6371
+        c_x = 0
+        c_y = 0
+        c_z = 0
+
+        center = {}
+
+        for user_id in self.members:
+            location = self.members[user_id]["location"]
+            latitude = math.radians(location["lat"])
+            longitude = math.radians(location["long"])
+
+            x = math.cos(latitude) * math.cos(longitude) * R
+            y = math.cos(latitude) * math.sin(longitude) * R
+            z = math.sin(latitude) * R
+
+            c_x += x
+            c_y += y
+            c_z += z
+
+        c_x /= n
+        c_y /= n
+        c_z /= n
+
+        if ( ( math.abs(c_x) < math.pow(10, -9) )
+          and ( math.abs(c_y) < math.pow(10, -9) )
+          and ( math.abs(c_z) < math.pow(10, -9) ) ):
+            center["lat"] = 40.866667
+            center["long"] = 34.566667
+        else:
+            hyp = math.sqrt(math.pow(c_x, 2) + math.pow(c_y, 2)) 
+            center["lat"] = math.degrees(math.atan2(c_z, hyp))
+            center["long"] = math.degrees(math.atan2(c_y, c_x))
+
+        radius = self.radius
+
+        for user_id in self.members:
+            location = self.members[user_id]
+            distance = ChatRoom.distance(center, location)
+            if ( distance > radius ):
+                radius = distance
+
+        return (center, radius)
+
+    def set_center_and_radius(self, center_and_radius):
+        self.center = center_and_radius[0]
+        self.radius = center_and_radius[1]
+
     def add_user(self, user_id, location):
-        if (not ChatRoom.user2chat.get(user_id, False) ):
-            self.members.append({
-                "id": user_id,
-                "location": location
-            })
-            ChatRoom.user2chat[user_id] = self.ids[0]
+        self.members[user_id] = {"location": location}
+        ChatRoom.user2chat[user_id] = self.ids[0]
+        pool.apply_async(self.compute_center_and_radius,
+            [], callback=self.set_center_and_radius)
+
+    def remove_user(self, user_id):
+        for member_id in self.members:
+            if ( member_id == user_id ):
+                del self.members[user_id]
+                break
+        del ChatRoom.user2chat[user_id]
+        pool.apply_async(self.compute_center_and_radius,
+            [], callback=self.set_center_and_radius)
+
+    def is_full(self):
+        return len(self.members.keys()) >= 6
+
+    def has_skipped(self, user_id):
+        user = User.get(user_id)
+        for chat_id in chat_room.ids:
+            if ( chat_id in user.skipped_chats ):
+                return True
+        return False
+
+    @staticmethod
+    def get_chat(chat_id):
+        def discover_chat(chat_id):
+            while ( chat_id ):
+                chat_id = ChatRoom.chat2chat[chat_id]
+            return chat_id
+        chat_room = ChatRoom.chats.get(chat_id, discover_chat(chat_id))
 
     @staticmethod
     def distance(location1, location2):
@@ -116,11 +193,15 @@ class ChatRoom:
         return R * c
 
     @staticmethod
-    def closest(location):
+    def closest(user_id, location):
         closest = None
         min_distance = sys.maxint
-        for chat_room in ChatRoom.chats:
-            chat_room = ChatRoom.chats[chat_room]
+        for chat_id in ChatRoom.chats:
+            chat_room = ChatRoom.get_chat(chat_id)
+            if ( chat_room.is_full() ):
+                continue
+            if ( chat_room.has_skipped(user_id) ):
+                continue
             distance = ChatRoom.distance(location, chat_room.center) 
             if ( distance < chat_room.radius ):
                 if ( not closest ):
@@ -136,18 +217,19 @@ class ChatRoom:
         return ChatRoom.user2chat.get(user_id, None)
 
     @staticmethod
-    def get_chat(user_id, location):
+    def assign_chat(user_id, location):
         if ( location == "unknown" ):
             return None, []
         chat_id = ChatRoom.at_chat(user_id)
         if ( chat_id ):
-            return chat_id, ChatRoom.chats[chat_id].ids
+            return chat_id, ChatRoom.get_chat(chat_id).ids
         else:
-            closest = ChatRoom.closest(location)
+            closest = ChatRoom.closest(user_id, location)
             if ( closest ):
                 closest.add_user(user_id, location)
                 return closest.ids[0], closest.ids
             else:
+                User.get(user_id).skipped_chats = []
                 chat_room = ChatRoom(location)
                 chat_room.add_user(user_id, location)
                 return chat_room.ids[0], chat_room.ids
@@ -179,13 +261,13 @@ def index():
         })
 
     chats = []
-    for chat in ChatRoom.chats:
-        chat = ChatRoom.chats[chat]
+    for chat_id in ChatRoom.chats:
+        chat_room = ChatRoom.get_chat(chat_id)
         chats.append({
-            "ids": chat.ids,
-            "center": chat.center,
-            "radius": chat.radius,
-            "members": chat.members
+            "ids": chat_room.ids,
+            "center": chat_room.center,
+            "radius": chat_room.radius,
+            "members": chat_room.members
         })
 
     response = make_response(json.dumps({
@@ -296,6 +378,10 @@ def send_presence(user_id):
     user_data["anonymous"] = anonymous
     user_data["location"] = location
 
+    if ( location != "unknown" ):
+        location["lat"] = int(location["lat"])
+        location["long"] = int(location["long"])
+
     if ( current_user.is_authenticated() ):
         logging.info("You are already authenticated")
         if ( current_user.get_id() != user_id ):
@@ -303,7 +389,7 @@ def send_presence(user_id):
             response = make_response(json.dumps({'server':'presence fail (you are someone else)', 'code':'error'}), 200)
         else:
             logging.info("Presence sent ok")
-            chat_room, chat_ids = ChatRoom.get_chat(user_id, location)
+            chat_room, chat_ids = ChatRoom.assign_chat(user_id, location)
 
             p = Process(target=do_send_presence,
                 args=(chat_ids, user_data))
@@ -324,7 +410,7 @@ def send_presence(user_id):
             database.session.add(u)
             database.session.commit()
             logging.info("Presence sent ok (by logging)")
-            chat_room, chat_ids = ChatRoom.get_chat(user_id, location)
+            chat_room, chat_ids = ChatRoom.assign_chat(user_id, location)
 
             p = Process(target=do_send_presence,
                 args=(chat_ids, user_data))
@@ -349,15 +435,42 @@ def send_inactive():
 
     user_id = current_user.get_id()
 
-    if logout_user():
-        u = User.get_stored(user_id)
-        u.taken = False
-        database.session.add(u)
-        database.session.commit()
-        response = make_response(json.dumps({'server':'{} just left'.format(user_id), 'code':'ok'}), 200)
-    else:
-        response = make_response(json.dumps({'server':'leaving failed somehow', 'code':'error'}), 200)
+    u = User.get_stored(user_id)
+    u.taken = False
+    database.session.add(u)
+    database.session.commit()
+    response = make_response(json.dumps({'server':'{} just became inactive'.format(user_id), 'code':'ok'}), 200)
+    response.headers["Content-Type"] = "application/json"
+    return response
 
+@server.route('/skip', methods=['POST'])
+@login_required
+def send_skip():
+
+    user_id = current_user.get_id()
+
+    chat_id = ChatRoom.at_chat(user_id)
+    if ( chat_id ):
+        chat_room = ChatRoom.get_chat(chat_id)
+        User.get(user_id).skipped_chats.extend(chat_room.ids)
+        chat_room.remove_user(user_id)
+
+    response = make_response(json.dumps({'server':'{} just left'.format(user_id), 'code':'ok'}), 200)
+    response.headers["Content-Type"] = "application/json"
+    return response
+
+@server.route('/exit', methods=['POST'])
+@login_required
+def send_exit():
+
+    user_id = current_user.get_id()
+
+    chat_id = ChatRoom.at_chat(user_id)
+    if ( chat_id ):
+        ChatRoom.get_chat(chat_id).remove_user(user_id)
+    logout_user()
+
+    response = make_response(json.dumps({'server':'{} just left'.format(user_id), 'code':'ok'}), 200)
     response.headers["Content-Type"] = "application/json"
     return response
 
@@ -485,6 +598,8 @@ def shutdown():
     return response
 
 if __name__ == "__main__":
+
+    pool = Pool(processes=10)
 
     port = int(os.environ.get("PORT", 5000))
     database.create_all()
