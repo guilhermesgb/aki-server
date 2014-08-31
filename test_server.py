@@ -52,8 +52,6 @@ class TestServerEndpoints(unittest.TestCase):
         response = prepare_and_send_request('GET', '/presence',
             client='_1234567890')
         response = perform_basic_assertions(self, response)
-        self.assertEqual(response['server'],
-            "you must send presence")
         self.assertEqual(response['code'], "ok")
         self.assertEqual(response['user_id'], None)
 
@@ -69,16 +67,12 @@ class TestServerEndpoints(unittest.TestCase):
         response = prepare_and_send_request('POST', '/presence/_1234567890',
             client='_1234567890', payload=payload)
         response = perform_basic_assertions(self, response)
-        self.assertEqual(response['server'],
-            "presence sent (just authenticated)")
         self.assertEqual(response['code'], "ok")
 
     def test_003_get_presence_authenticated(self):
         response = prepare_and_send_request('GET', '/presence',
             client='_1234567890')
         response = perform_basic_assertions(self, response)
-        self.assertEqual(response['server'],
-            "you are _1234567890")
         self.assertEqual(response['code'], "ok")
         self.assertEqual(response['user_id'], "_1234567890")
 
@@ -94,16 +88,12 @@ class TestServerEndpoints(unittest.TestCase):
         response = prepare_and_send_request('POST', '/presence/_1234567890',
             client='_1234567890', payload=payload)
         response = perform_basic_assertions(self, response)
-        self.assertEqual(response['server'],
-            "presence sent (already authenticated)")
         self.assertEqual(response['code'], "ok")
 
     def test_005_get_presence_authenticated_again(self):
         response = prepare_and_send_request('GET', '/presence',
             client='_1234567890')
         response = perform_basic_assertions(self, response)
-        self.assertEqual(response['server'],
-            "you are _1234567890")
         self.assertEqual(response['code'], "ok")
         self.assertEqual(response['user_id'], "_1234567890")
 
@@ -119,24 +109,18 @@ class TestServerEndpoints(unittest.TestCase):
         response = prepare_and_send_request('POST', '/presence/another_user',
             client='_1234567890', payload=payload)
         response = perform_basic_assertions(self, response)
-        self.assertEqual(response['server'],
-            "presence fail (you are someone else)")
         self.assertEqual(response['code'], "error")
 
     def test_007_logout(self):
         response = prepare_and_send_request('POST', '/inactive',
             client='_1234567890')
         response = perform_basic_assertions(self, response)
-        self.assertEqual(response['server'],
-            "_1234567890 just left")
         self.assertEqual(response['code'], "ok")
 
     def test_008_get_presence_after_logout(self):
         response = prepare_and_send_request('GET', '/presence',
             client='_1234567890')
         response = perform_basic_assertions(self, response)
-        self.assertEqual(response['server'],
-            "you must send presence")
         self.assertEqual(response['code'], "ok")
         self.assertEqual(response['user_id'], None)
 
@@ -144,16 +128,12 @@ class TestServerEndpoints(unittest.TestCase):
         response = prepare_and_send_request('POST', '/inactive',
             client='_1234567890')
         response = perform_basic_assertions(self, response)
-        self.assertEqual(response['server'],
-            "you are unauthorized")
         self.assertEqual(response['code'], "error")
 
     def test_010_get_presence_after_failed_logout(self):
         response = prepare_and_send_request('GET', '/presence',
             client='_1234567890')
         response = perform_basic_assertions(self, response)
-        self.assertEqual(response['server'],
-            "you must send presence")
         self.assertEqual(response['code'], "ok")
         self.assertEqual(response['user_id'], None)
 
@@ -169,16 +149,12 @@ class TestServerEndpoints(unittest.TestCase):
         response = prepare_and_send_request('POST', '/presence/_1234567890',
             client='_1234567890', payload=payload)
         response = perform_basic_assertions(self, response)
-        self.assertEqual(response['server'],
-            "presence sent (just authenticated)")
         self.assertEqual(response['code'], "ok")
 
     def test_012_get_presence_authenticated_once_again(self):
         response = prepare_and_send_request('GET', '/presence',
             client='_1234567890')
         response = perform_basic_assertions(self, response)
-        self.assertEqual(response['server'],
-            "you are _1234567890")
         self.assertEqual(response['code'], "ok")
         self.assertEqual(response['user_id'], "_1234567890")
 
