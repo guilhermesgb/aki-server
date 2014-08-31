@@ -97,8 +97,9 @@ class ChatRoom:
         self.radius = ChatRoom.MIN_RADIUS
         ChatRoom.chats[self.ids[0]] = self
 
-    def compute_center_and_radius(self):
-        n = len(self.members)
+    def update_center_and_radius(self):
+
+        n = len(self.members.keys())
         R = 6371
         c_x = 0
         c_y = 0
@@ -123,7 +124,7 @@ class ChatRoom:
         c_y /= n
         c_z /= n
 
-        if ( ( math.abs(c_x) < math.pow(10, -9) )
+        if ( ( math.fabs(c_x) < math.pow(10, -9) )
           and ( math.abs(c_y) < math.pow(10, -9) )
           and ( math.abs(c_z) < math.pow(10, -9) ) ):
             center["lat"] = 40.866667
@@ -133,25 +134,22 @@ class ChatRoom:
             center["lat"] = math.degrees(math.atan2(c_z, hyp))
             center["long"] = math.degrees(math.atan2(c_y, c_x))
 
-        radius = self.radius
+        self.center = center
+
+        radius = ChatRoom.MIN_RADIUS
 
         for user_id in self.members:
-            location = self.members[user_id]
+            location = self.members[user_id]["location"]
             distance = ChatRoom.distance(center, location)
             if ( distance > radius ):
                 radius = distance
 
-        return (center, radius)
-
-    def set_center_and_radius(self, center_and_radius):
-        self.center = center_and_radius[0]
-        self.radius = center_and_radius[1]
+        self.radius = radius
 
     def add_user(self, user_id, location):
         self.members[user_id] = {"location": location}
         ChatRoom.user2chat[user_id] = self.ids[0]
-        pool.apply_async(self.compute_center_and_radius,
-            [], callback=self.set_center_and_radius)
+        self.update_center_and_radius()
 
     def remove_user(self, user_id):
         for member_id in self.members:
@@ -159,8 +157,7 @@ class ChatRoom:
                 del self.members[user_id]
                 break
         del ChatRoom.user2chat[user_id]
-        pool.apply_async(self.compute_center_and_radius,
-            [], callback=self.set_center_and_radius)
+        self.update_center_and_radius()
 
     def is_full(self):
         return len(self.members.keys()) >= 6
@@ -174,11 +171,11 @@ class ChatRoom:
 
     @staticmethod
     def get_chat(chat_id):
-        def discover_chat(chat_id):
-            while ( chat_id ):
-                chat_id = ChatRoom.chat2chat[chat_id]
-            return chat_id
-        chat_room = ChatRoom.chats.get(chat_id, discover_chat(chat_id))
+        if ( chat_id == None ):
+            return None
+        chat_room = ChatRoom.chats.get(chat_id,
+            ChatRoom.get_chat(ChatRoom.chat2chat.get(chat_id, None)))
+        return chat_room
 
     @staticmethod
     def distance(location1, location2):
@@ -379,8 +376,8 @@ def send_presence(user_id):
     user_data["location"] = location
 
     if ( location != "unknown" ):
-        location["lat"] = int(location["lat"])
-        location["long"] = int(location["long"])
+        location["lat"] = float(location["lat"])
+        location["long"] = float(location["long"])
 
     if ( current_user.is_authenticated() ):
         logging.info("You are already authenticated")
@@ -598,8 +595,6 @@ def shutdown():
     return response
 
 if __name__ == "__main__":
-
-    pool = Pool(processes=10)
 
     port = int(os.environ.get("PORT", 5000))
     database.create_all()
