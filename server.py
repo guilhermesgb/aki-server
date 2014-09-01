@@ -116,7 +116,7 @@ class ChatRoom:
 
     MIN_RADIUS = 0.05 #in kmeters
     MAX_USERS_PER_ROOM = 6
-    DISABLE_MERGE = MAX_USERS_PER_ROOM / 3
+    DISABLE_MERGE = MAX_USERS_PER_ROOM / 2
     chats = {}
     user2chat = {}
     chat2chat = {}
@@ -133,7 +133,7 @@ class ChatRoom:
             if ( chat_id in User.get(user_id).skipped_chats ):
                 continue
             chat_room = ChatRoom.get_chat(chat_id)
-            if ( len(chat_room.members.keys()) > ChatRoom.DISABLE_MERGE / 3 ):
+            if ( len(chat_room.members.keys()) > ChatRoom.DISABLE_MERGE ):
                 continue
             if ( ChatRoom.distance(self.center, chat_room.center) <= self.radius + chat_room.radius ):
                 for chat_id in chat_room.ids:
