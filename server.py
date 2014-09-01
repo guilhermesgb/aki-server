@@ -131,7 +131,7 @@ class ChatRoom:
         }
 
         data = {
-            "action": "com.lespi.aki.receivers.INCOMING_GEOFENCE_UPDATE"
+            "action": "com.lespi.aki.receivers.INCOMING_GEOFENCE_UPDATE",
             "center": center,
             "radius": radius
         }
