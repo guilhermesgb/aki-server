@@ -24,11 +24,11 @@ class StoredUser(database.Model):
     __tablename__ = 'person'
     id = database.Column(database.Integer, primary_key=True)
     uid = database.Column(database.String(20), unique=True)
-    active = database.Column(database.Boolean)
+    taken = database.Column(database.Boolean)
 
-    def __init__(self, user_id, active=False):
+    def __init__(self, user_id, taken=False):
         self.uid = user_id
-        self.active = active
+        self.taken = taken
 
     def __repr__(self):
         return "<Username {}>".format(self.uid)
@@ -37,10 +37,10 @@ class User(UserMixin):
 
     users = {}
 
-    def __init__(self, user_id, active=True):
+    def __init__(self, user_id, taken=True):
 
         self.uid = user_id
-        self.active = active
+        self.taken = taken
         self.skipped_chats = []
 
         try:
@@ -330,7 +330,7 @@ def index():
         u = User.get_stored(user)
         users.append({
             'user_id' : u.uid,
-            'status' : 'active' if u.active else 'inactive'
+            'status' : 'active' if u.taken else 'inactive'
         })
 
     chats = []
@@ -462,7 +462,7 @@ def send_presence(user_id):
             response = make_response(json.dumps({'server':'presence fail (you are someone else)', 'code':'error'}), 200)
         else:
             u = User.get_stored(user_id)
-            u.active = True
+            u.taken = True
             database.session.add(u)
             database.session.commit()
             logging.info("Presence sent ok")
@@ -483,7 +483,7 @@ def send_presence(user_id):
         User(user_id)
         u = User.get_stored(user_id)
         if ( login_user(User.get(user_id), remember=True) ):
-            u.active = True
+            u.taken = True
             database.session.add(u)
             database.session.commit()
             logging.info("Presence sent ok (by logging)")
@@ -513,7 +513,7 @@ def send_inactive():
     user_id = current_user.get_id()
 
     u = User.get_stored(user_id)
-    u.active = False
+    u.taken = False
     database.session.add(u)
     database.session.commit()
     response = make_response(json.dumps({'server':'{} just became inactive'.format(user_id), 'code':'ok'}), 200)
@@ -680,7 +680,7 @@ if __name__ == "__main__":
     database.create_all()
 
     for user in StoredUser.query.all():
-        user.active = False
+        user.taken = False
         database.session.add(user)
     database.session.commit()
     server.run(host="0.0.0.0", port=port)
