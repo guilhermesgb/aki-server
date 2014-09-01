@@ -258,7 +258,11 @@ class ChatRoom:
             return None, []
         chat_id = ChatRoom.at_chat(user_id)
         if ( chat_id ):
-            return chat_id, ChatRoom.get_chat(chat_id).ids
+            chat_room = ChatRoom.get_chat(chat_id)
+            if ( ChatRoom.distance(chat_room.center, location) > chat_room.radius ):
+                chat_room.remove_user(user_id)
+                return ChatRoom.assign_chat(user_id, location)
+            return chat_id, chat_room.ids
         else:
             closest = ChatRoom.closest(user_id, location)
             if ( closest ):
