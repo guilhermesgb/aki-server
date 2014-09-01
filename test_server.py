@@ -111,33 +111,33 @@ class TestServerEndpoints(unittest.TestCase):
         response = perform_basic_assertions(self, response)
         self.assertEqual(response['code'], "error")
 
-    def test_007_logout(self):
-        response = prepare_and_send_request('POST', '/inactive',
+    def test_007_exit(self):
+        response = prepare_and_send_request('POST', '/exit',
             client='_1234567890')
         response = perform_basic_assertions(self, response)
         self.assertEqual(response['code'], "ok")
 
-    def test_008_get_presence_after_logout(self):
+    def test_008_get_presence_after_exit(self):
         response = prepare_and_send_request('GET', '/presence',
             client='_1234567890')
         response = perform_basic_assertions(self, response)
         self.assertEqual(response['code'], "ok")
         self.assertEqual(response['user_id'], None)
 
-    def test_009_logout_after_logout(self):
-        response = prepare_and_send_request('POST', '/inactive',
+    def test_009_exit_after_exit(self):
+        response = prepare_and_send_request('POST', '/exit',
             client='_1234567890')
         response = perform_basic_assertions(self, response)
         self.assertEqual(response['code'], "error")
 
-    def test_010_get_presence_after_failed_logout(self):
+    def test_010_get_presence_after_failed_exit(self):
         response = prepare_and_send_request('GET', '/presence',
             client='_1234567890')
         response = perform_basic_assertions(self, response)
         self.assertEqual(response['code'], "ok")
         self.assertEqual(response['user_id'], None)
 
-    def test_011_authenticate_again_after_logout(self):
+    def test_011_authenticate_again_after_exit(self):
         payload = {
             "first_name": "Username's First Name",
             "full_name": "Username's Full Name",

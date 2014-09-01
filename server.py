@@ -86,7 +86,8 @@ class User(UserMixin):
 class ChatRoom:
 
     MIN_RADIUS = 0.05 #in kmeters
-    MAX_USERS = 6
+    MAX_USERS_PER_ROOM = 6
+    DISABLE_MERGE = MAX_USERS_PER_ROOM / 3
     chats = {}
     user2chat = {}
     chat2chat = {}
@@ -103,7 +104,7 @@ class ChatRoom:
             if ( chat_id in User.get(user_id).skipped_chats ):
                 continue
             chat_room = ChatRoom.get_chat(chat_id)
-            if ( len(chat_room.members.keys()) > ChatRoom.MAX_USERS / 3 ):
+            if ( len(chat_room.members.keys()) > ChatRoom.DISABLE_MERGE / 3 ):
                 continue
             if ( ChatRoom.distance(self.center, chat_room.center) <= self.radius + chat_room.radius ):
                 for chat_id in chat_room.ids:
@@ -176,15 +177,16 @@ class ChatRoom:
         self.update_center_and_radius()
 
     def remove_user(self, user_id):
-        for member_id in self.members:
-            if ( member_id == user_id ):
-                del self.members[user_id]
-                break
-        del ChatRoom.user2chat[user_id]
-        self.update_center_and_radius()
+        if ( user_id in self.members.keys() ):
+            del self.members[user_id]
+            del ChatRoom.user2chat[user_id]
+        if ( len(self.members.keys()) != 0 ):
+            self.update_center_and_radius()
+        else:
+            ChatRoom.remove_chat(self.ids[0])
 
     def is_full(self):
-        return len(self.members.keys()) >= ChatRoom.MAX_USERS
+        return len(self.members.keys()) >= ChatRoom.MAX_USERS_PER_ROOM
 
     def has_skipped(self, user_id):
         user = User.get(user_id)
@@ -200,6 +202,19 @@ class ChatRoom:
         chat_room = ChatRoom.chats.get(chat_id,
             ChatRoom.get_chat(ChatRoom.chat2chat.get(chat_id, None)))
         return chat_room
+
+    @staticmethod
+    def remove_chat(chat_id):
+        if ( chat_id == None ):
+            return
+        chat_room = ChatRoom.chats.get(chat_id, None)
+        if ( not chat_room ):
+            return
+        for chat_id in chat_room.ids:
+            if ( chat_id in ChatRoom.chats.keys() ):
+                del ChatRoom.chats[chat_id]
+            if ( chat_id in ChatRoom.chat2chat.keys() ):
+                del ChatRoom.chat2chat[chat_id]
 
     @staticmethod
     def distance(location1, location2):
