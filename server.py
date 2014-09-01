@@ -83,6 +83,35 @@ class User(UserMixin):
             return u.do_get_stored()
         return None
 
+def do_update_center_and_radius(chat_ids, center, radius):
+
+    database.session = database.create_scoped_session()
+
+    headers = {
+        "X-Parse-Application-Id": os.environ.get("PARSE_APPLICATION_ID", None),
+        "X-Parse-REST-API-Key": os.environ.get("PARSE_REST_API_KEY", None),
+        "Content-Type":"application/json"
+    }
+
+    data = {
+        "action": "com.lespi.aki.receivers.INCOMING_GEOFENCE_UPDATE",
+        "center": center,
+        "radius": radius
+    }
+
+    payload = {
+        "channels": chat_ids, 
+        "data" : data
+    }
+
+    response = send_request('POST', "https://api.parse.com/1/push",
+        payload=payload, headers=headers) 
+
+    if ( response["success"] ):
+        logging.info("Message sent to Parse push notifications system")
+    else:
+        logging.info("Cannot send message to Parse push notifications system")
+
 class ChatRoom:
 
     MIN_RADIUS = 0.05 #in kmeters
@@ -119,35 +148,6 @@ class ChatRoom:
             del ChatRoom.chats[chat_id]
         ChatRoom.chats[self.ids[0]] = self
         self.add_user(user_id, location)
-
-    def do_update_center_and_radius(chat_ids, center, radius):
-
-        database.session = database.create_scoped_session()
-
-        headers = {
-            "X-Parse-Application-Id": os.environ.get("PARSE_APPLICATION_ID", None),
-            "X-Parse-REST-API-Key": os.environ.get("PARSE_REST_API_KEY", None),
-            "Content-Type":"application/json"
-        }
-
-        data = {
-            "action": "com.lespi.aki.receivers.INCOMING_GEOFENCE_UPDATE",
-            "center": center,
-            "radius": radius
-        }
-
-        payload = {
-            "channels": chat_ids, 
-            "data" : data
-        }
-
-        response = send_request('POST', "https://api.parse.com/1/push",
-            payload=payload, headers=headers) 
-
-        if ( response["success"] ):
-            logging.info("Message sent to Parse push notifications system")
-        else:
-            logging.info("Cannot send message to Parse push notifications system")
 
     def update_center_and_radius(self):
 
