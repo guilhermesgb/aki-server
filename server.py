@@ -120,6 +120,35 @@ class ChatRoom:
         ChatRoom.chats[self.ids[0]] = self
         self.add_user(user_id, location)
 
+    def do_update_center_and_radius(chat_ids, center, radius):
+
+        database.session = database.create_scoped_session()
+
+        headers = {
+            "X-Parse-Application-Id": os.environ.get("PARSE_APPLICATION_ID", None),
+            "X-Parse-REST-API-Key": os.environ.get("PARSE_REST_API_KEY", None),
+            "Content-Type":"application/json"
+        }
+
+        data = {
+            "action": "com.lespi.aki.receivers.INCOMING_GEOFENCE_UPDATE"
+            "center": center,
+            "radius": radius
+        }
+
+        payload = {
+            "channels": chat_ids, 
+            "data" : data
+        }
+
+        response = send_request('POST', "https://api.parse.com/1/push",
+            payload=payload, headers=headers) 
+
+        if ( response["success"] ):
+            logging.info("Message sent to Parse push notifications system")
+        else:
+            logging.info("Cannot send message to Parse push notifications system")
+
     def update_center_and_radius(self):
 
         n = len(self.members.keys())
@@ -170,6 +199,11 @@ class ChatRoom:
                 radius = distance
 
         self.radius = radius
+
+        p = Process(target=do_update_center_and_radius,
+            args=(chat_ids, center, radius))
+        p.daemon = True
+        p.start()
 
     def add_user(self, user_id, location):
         self.members[user_id] = {"location": location}
