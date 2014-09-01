@@ -116,13 +116,18 @@ class ChatRoom:
 
     MIN_RADIUS = 0.05 #in kmeters
     MAX_USERS_PER_ROOM = 6
-    DISABLE_MERGE = MAX_USERS_PER_ROOM / 2
+    UNSTABLE_ROOM_THRESHOLD = MAX_USERS_PER_ROOM / 2
     chats = {}
     user2chat = {}
     chat2chat = {}
 
     def __init__(self, location, user_id):
-        self.ids = [ "chat-" + str(uuid.uuid4()) ]
+
+        new_id = "chat-" + str(uuid.uuid4())
+        while ( ChatRoom.get_chat(new_id) != None ):
+            new_id = "chat-" + str(uuid.uuid4())
+        
+        self.ids = [ new_id ]
         self.members = {}
         self.center = location
         self.radius = ChatRoom.MIN_RADIUS
@@ -133,7 +138,7 @@ class ChatRoom:
             if ( chat_id in User.get(user_id).skipped_chats ):
                 continue
             chat_room = ChatRoom.get_chat(chat_id)
-            if ( len(chat_room.members.keys()) > ChatRoom.DISABLE_MERGE ):
+            if ( chat_room.is_stable() ):
                 continue
             if ( ChatRoom.distance(self.center, chat_room.center) <= self.radius + chat_room.radius ):
                 for chat_id in chat_room.ids:
@@ -221,6 +226,9 @@ class ChatRoom:
 
     def is_full(self):
         return len(self.members.keys()) >= ChatRoom.MAX_USERS_PER_ROOM
+
+    def is_stable(self):
+        return len(chat_room.members.keys()) > ChatRoom.UNSTABLE_ROOM_THRESHOLD
 
     def has_skipped(self, user_id):
         user = User.get(user_id)
