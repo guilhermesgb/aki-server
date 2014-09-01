@@ -542,6 +542,11 @@ def send_exit():
 
     user_id = current_user.get_id()
 
+    u = User.get_stored(user_id)
+    u.taken = False
+    database.session.add(u)
+    database.session.commit()
+
     chat_id = ChatRoom.at_chat(user_id)
     if ( chat_id ):
         ChatRoom.get_chat(chat_id).remove_user(user_id)
