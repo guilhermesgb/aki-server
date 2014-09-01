@@ -201,7 +201,7 @@ class ChatRoom:
         self.radius = radius
 
         p = Process(target=do_update_center_and_radius,
-            args=(chat_ids, center, radius))
+            args=(self.ids, center, radius))
         p.daemon = True
         p.start()
 
