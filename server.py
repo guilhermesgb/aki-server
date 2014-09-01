@@ -86,20 +86,44 @@ class User(UserMixin):
 class ChatRoom:
 
     MIN_RADIUS = 0.05 #in kmeters
+    MAX_USERS = 6
     chats = {}
     user2chat = {}
     chat2chat = {}
 
-    def __init__(self, location):
+    def __init__(self, location, user_id):
         self.ids = [ "chat-" + str(uuid.uuid4()) ]
         self.members = {}
         self.center = location
         self.radius = ChatRoom.MIN_RADIUS
+
+        to_clean = []
+
+        for chat_id in ChatRoom.chats:
+            if ( chat_id in User.get(user_id).skipped_chats ):
+                continue
+            chat_room = ChatRoom.get_chat(chat_id)
+            if ( len(chat_room.members.keys()) > ChatRoom.MAX_USERS / 3 ):
+                continue
+            if ( ChatRoom.distance(self.center, chat_room.center) <= self.radius + chat_room.radius ):
+                for chat_id in chat_room.ids:
+                    if ( chat_id not in ChatRoom.chat2chat ):
+                        ChatRoom.chat2chat[chat_id] = self.ids[0]
+                    if ( chat_id in ChatRoom.chats ):
+                        to_clean.append(chat_id)
+                self.ids.extend(chat_room.ids)
+                self.members.update(chat_room.members)
+
+        for chat_id in to_clean:
+            del ChatRoom.chats[chat_id]
         ChatRoom.chats[self.ids[0]] = self
+        self.add_user(user_id, location)
 
     def update_center_and_radius(self):
 
         n = len(self.members.keys())
+        if ( n == 0 ):
+            return
         R = 6371
         c_x = 0
         c_y = 0
@@ -160,11 +184,11 @@ class ChatRoom:
         self.update_center_and_radius()
 
     def is_full(self):
-        return len(self.members.keys()) >= 6
+        return len(self.members.keys()) >= ChatRoom.MAX_USERS
 
     def has_skipped(self, user_id):
         user = User.get(user_id)
-        for chat_id in chat_room.ids:
+        for chat_id in self.ids:
             if ( chat_id in user.skipped_chats ):
                 return True
         return False
@@ -227,8 +251,7 @@ class ChatRoom:
                 return closest.ids[0], closest.ids
             else:
                 User.get(user_id).skipped_chats = []
-                chat_room = ChatRoom(location)
-                chat_room.add_user(user_id, location)
+                chat_room = ChatRoom(location, user_id)
                 return chat_room.ids[0], chat_room.ids
 
 
