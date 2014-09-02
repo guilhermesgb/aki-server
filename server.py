@@ -410,7 +410,7 @@ def do_send_presence(chat_ids, user_data):
 @server.route('/presence/<user_id>', methods=['POST'])
 def send_presence(user_id):
 
-    try:
+    atry:
         data = request.json
         if ( data == None ):
             response = make_response(json.dumps({'server':'payload must be valid json', 'code':'error'}), 200)
