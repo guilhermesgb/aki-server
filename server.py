@@ -648,7 +648,7 @@ def shutdown():
         response.headers["Content-Type"] = "application/json"
         return response
 
-    try:
+    atry:
         data = request.json
         if ( data == None ):
             response = make_response(json.dumps({'server':'payload must be valid json', 'code':'error'}), 200)
