@@ -354,7 +354,8 @@ def index():
     response = make_response(json.dumps({
         'server':'alive',
         'users': users,
-        'chats': chats
+        'chats': chats,
+        'code': "ok"
     }), 200)
     response.headers["Content-Type"] = "application/json"
     return response
