@@ -228,7 +228,7 @@ class ChatRoom:
         return len(self.members.keys()) >= ChatRoom.MAX_USERS_PER_ROOM
 
     def is_stable(self):
-        return len(chat_room.members.keys()) > ChatRoom.UNSTABLE_ROOM_THRESHOLD
+        return len(self.members.keys()) > ChatRoom.UNSTABLE_ROOM_THRESHOLD
 
     def has_skipped(self, user_id):
         user = User.get(user_id)
