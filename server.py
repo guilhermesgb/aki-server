@@ -135,9 +135,9 @@ class ChatRoom:
         to_clean = []
 
         for chat_id in ChatRoom.chats:
-            if ( chat_id in User.get(user_id).skipped_chats ):
-                continue
             chat_room = ChatRoom.get_chat(chat_id)
+            if ( chat_room.was_skipped_by(user_id) ):
+                continue
             if ( chat_room.is_stable() ):
                 continue
             if ( ChatRoom.distance(self.center, chat_room.center) <= self.radius + chat_room.radius ):
@@ -230,7 +230,7 @@ class ChatRoom:
     def is_stable(self):
         return len(self.members.keys()) > ChatRoom.UNSTABLE_ROOM_THRESHOLD
 
-    def has_skipped(self, user_id):
+    def was_skipped_by(self, user_id):
         user = User.get(user_id)
         for chat_id in self.ids:
             if ( chat_id in user.skipped_chats ):
@@ -278,7 +278,7 @@ class ChatRoom:
             chat_room = ChatRoom.get_chat(chat_id)
             if ( chat_room.is_full() ):
                 continue
-            if ( chat_room.has_skipped(user_id) ):
+            if ( chat_room.was_skipped_by(user_id) ):
                 continue
             distance = ChatRoom.distance(location, chat_room.center) 
             if ( distance < chat_room.radius ):
