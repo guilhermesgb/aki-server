@@ -233,8 +233,11 @@ class ChatRoom:
     def was_skipped_by(self, user_id):
         user = User.get(user_id)
         for chat_id in self.ids:
+            print "chat_id {" + chat_id + "} in skipped list of user {" + user_id + "}?"
             if ( chat_id in user.skipped_chats ):
+                print "TRUE!"
                 return True
+        print "FALSE..."
         return False
 
     @staticmethod
@@ -311,8 +314,8 @@ class ChatRoom:
                 closest.add_user(user_id, location)
                 return closest.ids[0], closest.ids
             else:
-                User.get(user_id).skipped_chats = []
                 chat_room = ChatRoom(location, user_id)
+                User.get(user_id).skipped_chats = []
                 return chat_room.ids[0], chat_room.ids
 
 
