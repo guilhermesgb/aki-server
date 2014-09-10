@@ -114,7 +114,7 @@ def do_update_center_and_radius(chat_ids, center, radius):
 
 class ChatRoom:
 
-    MIN_RADIUS = 0.2 #in kmeters
+    MIN_RADIUS = 0.02 #in kmeters
     MAX_USERS_PER_ROOM = 7
     UNSTABLE_ROOM_THRESHOLD = 3
     chats = {}
