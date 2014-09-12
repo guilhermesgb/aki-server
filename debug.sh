@@ -18,11 +18,6 @@ def index():
 
     return render_template('index.html')
 
-@server.route('/old')
-def old_index():
-
-    return render_template('index-old.html')
-
 if __name__ == '__main__':
 
     port = int(os.environ.get('PORT', 5000))
@@ -37,8 +32,6 @@ cp -R stylesheets/ $DEBUG_PATH/stylesheets
 cp -R fonts/ $DEBUG_PATH/fonts
 
 cp index.html $DEBUG_PATH/index.html
-
-cp index-old.html $DEBUG_PATH/index-old.html
 
 THIS_PATH=`pwd`
 cd $DEBUG_PATH
