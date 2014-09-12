@@ -1,0 +1,283 @@
+/*================= 1. Reset =============== */
+
+/*html, body, div, span, object, iframe,
+h1, h2, h3, h4, h5, h6, p, blockquote, pre,
+a, img, small, strong, ol, ul, li, form, label,
+table, caption, tr, td, footer, header {
+  margin: 0;
+  padding: 0;
+  border: 0;
+  font-size: 100%;
+  font: inherit;
+  vertical-align: baseline;
+}*/
+
+@font-face {
+    font-family: "st-marie-thin";
+    src: local("StMarieThin"), url("../fonts/stmarie-thin.otf");/* format("truetype");*/
+}
+
+footer, header, menu, nav, section {
+  display: block;
+}
+
+body {
+  line-height: 1;
+  text-rendering: optimizeLegibility;
+  font-family: "Lato", sans-serif;
+  color:#666666;
+
+}
+ol, ul {
+  list-style: none;
+}
+
+a:focus { outline:0; }
+a:hover {  text-decoration:none; }
+
+::-moz-selection { color: #f3f5f5;  background:#406371; }
+
+.center
+{
+margin-left:auto;
+margin-right:auto;
+text-align: center;
+margin: auto;
+}
+
+h1 {
+  font-weight: bold;
+}
+
+.clear { clear:both; }
+
+.top-nav {
+  position:fixed;
+  width:100%;
+  height:40px;
+  padding:20px 0 20px 0;
+  background:#000;
+  opacity:0.9;
+  z-index:1000;
+  top:0;
+  /*display:block;*/
+  display:none;
+}
+.top-nav {
+  color:#678c99;
+  text-shadow: 2px 2px 3px rgba(255,255,255,0.1);
+  box-shadow:1px 0px 4px #666;
+}
+.top-nav h1 { font-size:37px; height:31px; padding:0 0 0 36px;  line-height:30px; float:left; }
+
+.top-arrow { position:fixed; width:20px; height:18px;   margin-left:60px; background:url(../images/top-arrow.png) no-repeat; z-index:199; top:81px;display:block;
+ }
+.top-nav2 { position:fixed; width:100%; height:4px;  background-color:#7298a5; z-index:200; top:0px;display:block; }
+
+/* logo */
+.logo {
+  float:left;
+}
+
+/* Intro */
+
+section#intro{
+  background:url(../images/background.jpg) fixed no-repeat; /* 50% 0 no-repeat fixed; */
+  background-size: 100% 100%;
+  color: #fff;
+  box-shadow: 0px 5px 30px #888888;
+  padding: 0px 0px 0px 0px;
+  /*padding: 130px 0px 130px 0px;*/
+}
+
+section#intro h1 {
+  text-align: center;
+  color: grey;
+}
+
+section#intro .center {
+  padding: 5px 30px 5px 30px;
+}
+
+section#intro .social {
+  margin-top: 30px;
+}
+
+section#features h1 {
+  max-width: 400px;
+}
+
+
+#app_description h5 {
+  text-align: justify;
+}
+
+.box {
+  max-width: 400px;
+  margin: auto;
+}
+
+.box .box-content {
+  background: #F3F3F3;
+  /*margin: 10px 10px 10px 10px;*/
+  padding: 15px 15px 15px 15px;
+  border-radius: 10px;
+}
+
+.box h1 {
+  text-align: center;
+  font-size: 20px;
+}
+
+.box h5 {
+  text-align: justify;
+}
+
+.box img {
+  margin-left:auto;
+  margin-right:auto;
+  width:100%;
+}
+
+section#footer {
+  background: #1a1a1a;
+  color: #666666;
+  padding: 20px 20px 20px 20px
+}
+
+section#footer a {
+  color: #21C67D;
+}
+
+section#video {
+  background: #EDEDED;
+}
+
+section#video h1 {
+  margin: 0px 0px 20px 0px;
+  text-align: center;
+}
+
+section#video img {
+   width: 100%;
+   max-width: 600px;
+   /*padding: 0px 150px 0px 150px;*/
+}
+
+section {
+  padding: 50px 0px 50px 0px;
+}
+
+section#subscribe {
+/*  background: #1a1a1a;
+  color: #949494;*/
+  background:url(../images/background.jpg) fixed no-repeat; /* 50% 0 no-repeat fixed; */
+  background-size: 100% 100%;
+  color: #fff;
+  box-shadow: 0px 5px 30px #888888;
+}
+
+section#subscribe h2 {
+  color: grey;
+}
+
+section#subscribe .larger {
+  display: block;
+  font-size: 40px;
+}
+
+section#subscribe .smaller {
+  display: block;
+  font-size: 20px;
+  font-family: "st-marie-thin";
+  color: #FFFFFF;
+  margin: 15px 0px 0px 0px;
+}
+
+section#subscribe .form-control {
+  background: transparent;
+}
+
+section#subscribe .btn-primary {
+  color: #FFFFFF;
+  background: #19964B;
+  border-color: transparent;
+  width: 100%;
+}
+
+section#subscribe .form-control:focus {
+  border-color: #000000;
+  -webkit-box-shadow: inset 0 1px 1px rgba(0,0,0,.075),0 0 8px rgba(255, 255, 255, 1);
+  box-shadow: inset 0 1px 1px rgba(0,0,0,.075),0 0 8px rgba(255, 255, 255, 1);
+}
+
+section#subscribe .subscribe-text-content {
+  padding: 0px 0px 30px 0px;
+}
+
+section#screenshots {
+  padding-left: 30px;
+  background: #EDEDED;
+}
+
+section#screenshots img {
+  width: 50%;
+  height: auto;
+  border-radius: 5px;
+}
+
+section#screenshots .row {
+  /*padding: 15px 0px 15px 0px;*/
+}
+
+section#team {
+  background:url(../images/background.jpg) fixed no-repeat; /* 50% 0 no-repeat fixed; */
+  background-size: 100% 100%;
+  box-shadow: 0px 5px 30px #888888;
+}
+
+section#team .profile {
+  background: #F3F3F3;
+  padding: 15px 15px 15px 15px;
+  border-radius: 10px;
+}
+
+section#team .profile img {
+  width: 130px;
+  height: 130px;
+  border-radius: 100px;
+}
+
+section#team .profile h5 {
+  text-align: justify;
+}
+
+
+/* Media Queries */
+
+@media(max-width:480px){
+  .wrapper {
+    width:300px;
+    margin:0 auto;
+  }
+}
+
+@media(min-width:480px){
+  .wrapper {
+    width:480px;
+    margin:0 auto;
+  }
+}
+@media(min-width:768px){
+  .wrapper {
+    width:940px;
+    margin:0 auto;
+  }
+}
+@media(min-width:992px){}
+@media(min-width:1200px){}
+
+.aki_logo > img {
+  margin-left: auto;
+  margin-right: auto;
+}
