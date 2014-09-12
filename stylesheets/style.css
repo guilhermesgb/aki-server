@@ -171,12 +171,47 @@ section#features .smaller {
   margin: 15px 0px 0px 0px;
 }
 
+section#features .center p {
+  margin-left: 30%;
+  margin-right: 30%;
+}
+
 section#cta a.btn {
   background-color: #343f4f;
   opacity: 1;
   color: white;
   width: 50%;
 }
+
+.video_box {
+  position: relative;
+  width: 50%;
+  margin-bottom: 0px;
+  margin-left: auto;
+  margin-right: auto;
+}
+
+.video_box:before {
+  content: "";
+  display: block;
+  padding-top: 75%;
+}
+
+.video_content {
+  position: absolute;
+  top: 0;
+  left: 0;
+  bottom: 0;
+  right: 0;
+  border-radius: 4px;
+  overflow: hidden;
+}
+
+iframe {
+  width: 100%;
+  height: 100%;
+}
+
 
 /* Media Queries */
 
