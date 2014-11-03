@@ -7,6 +7,7 @@ from sqlalchemy.orm.exc import NoResultFound, MultipleResultsFound
 from request_utils import send_request
 
 from multiprocessing import Process, Pool
+from threading import Timer
 import os, json, logging, math, sys, uuid
 
 logging.basicConfig(level=logging.DEBUG)
@@ -42,6 +43,7 @@ class User(UserMixin):
         self.uid = user_id
         self.taken = taken
         self.skipped_chats = []
+        self.terminate_timer = None
 
         try:
             StoredUser.query.filter(StoredUser.uid == user_id).one()
@@ -68,6 +70,28 @@ class User(UserMixin):
 
     def get_id(self):
         return unicode(self.uid)
+
+    def terminate(self):
+
+        print "TERMINATED DUE TO TIMEOUT!"
+        chat_id = ChatRoom.at_chat(self.uid)
+        if ( chat_id ):
+            ChatRoom.get_chat(chat_id).remove_user(self.uid)
+
+    def set_terminate_timer(self):
+
+        if ( self.terminate_timer ):
+            self.terminate_timer.cancel()
+
+        self.terminate_timer = Timer(120.0, self.terminate)
+        self.terminate_timer.start()
+
+    def cancel_terminate_timer(self):
+
+        if ( self.terminate_timer ):
+            self.terminate_timer.cancel()
+
+        self.terminate_timer = None
 
     def do_get_stored(self):
         return StoredUser.query.filter(StoredUser.uid == self.uid).first()
@@ -474,6 +498,7 @@ def send_presence(user_id):
             u.taken = True
             database.session.add(u)
             database.session.commit()
+            User.get(user_id).cancel_terminate_timer()
             logging.info("Presence sent ok")
             chat_room, chat_ids = ChatRoom.assign_chat(user_id, location)
 
@@ -495,6 +520,7 @@ def send_presence(user_id):
             u.taken = True
             database.session.add(u)
             database.session.commit()
+            User.get(user_id).cancel_terminate_timer()
             logging.info("Presence sent ok (by logging)")
             chat_room, chat_ids = ChatRoom.assign_chat(user_id, location)
 
@@ -525,6 +551,9 @@ def send_inactive():
     u.taken = False
     database.session.add(u)
     database.session.commit()
+
+    User.get(user_id).set_terminate_timer()
+
     response = make_response(json.dumps({'server':'{} just became inactive'.format(user_id), 'code':'ok'}), 200)
     response.headers["Content-Type"] = "application/json"
     return response
@@ -534,6 +563,11 @@ def send_inactive():
 def send_skip():
 
     user_id = current_user.get_id()
+
+    u = User.get_stored(user_id)
+    u.taken = False
+    database.session.add(u)
+    database.session.commit()
 
     chat_id = ChatRoom.at_chat(user_id)
     if ( chat_id ):
