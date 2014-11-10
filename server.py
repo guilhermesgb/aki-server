@@ -104,13 +104,8 @@ class User(UserMixin):
             if ( not user.get_id() in self.liked_users ):
                 self.liked_users.append(user.get_id())
 
-                if ( self.get_id() in user.liked_users ):
-                    #SHALL NOTIFY BOTH PARTIES OF MUTUAL INTEREST
-                    return "Both like each other!"
-                else:
-                    return "One likes the other!"
-            else:
-                return "One already likes the other!"
+                if ( self.get_id() in user.liked_users ):                    
+                    do_notify_mutual_interest(self.get_id(), user.get_id())
 
         finally:
             self.lock.release()
@@ -712,6 +707,49 @@ def send_message():
     response.headers["content-type"] = "application/json"
     return response
 
+def do_notify_mutual_interest(user_id1, user_id2):
+
+    chat_ids = []
+
+    chat_id1 = ChatRoom.at_chat(user_id1)
+    if ( chat_id1 ):
+        chat_room = ChatRoom.get_chat(chat_id1)
+        chat_ids.extend(chat_room.ids)
+
+    chat_id2 = ChatRoom.at_chat(user_id2)
+    if ( chat_id2 ):
+        chat_room = ChatRoom.get_chat(chat_id2)
+        chat_ids.extend(chat_room.ids)
+
+    if ( len(chat_ids) == 0 ):
+        return
+
+    database.session = database.create_scoped_session()
+
+    headers = {
+        "X-Parse-Application-Id": os.environ.get("PARSE_APPLICATION_ID", None),
+        "X-Parse-REST-API-Key": os.environ.get("PARSE_REST_API_KEY", None),
+        "Content-Type":"application/json"
+    }
+
+    user_data = {
+        "alert" : "Mutual interest detected between user {} and {}!".format(user_id1, user_id2)
+    }
+
+    payload = {
+        "channels": chat_ids,
+        "data" : user_data
+    }
+
+    response = send_request('POST', "https://api.parse.com/1/push",
+         payload=payload, headers=headers) 
+
+    if ( response["success"] ):
+        logging.info("Message sent to Parse push notifications system")
+    else:
+        logging.info("Cannot send message to Parse push notifications system")
+
+
 @server.route('/like/<user_id>', methods=['POST'])
 @login_required
 def send_like(user_id):
@@ -725,9 +763,9 @@ def send_like(user_id):
         response.headers["Content-Type"] = "application/json"
         return response
 
-    veredict = current_u.like(liked_u)
+    current_u.like(liked_u)
 
-    response = make_response(json.dumps({'server':'{} is interested in {}: {}'.format(current_id, user_id, veredict), 'code':'ok'}), 200)
+    response = make_response(json.dumps({'server':'{} is interested in {}'.format(current_id, user_id), 'code':'ok'}), 200)
     response.headers["Content-Type"] = "application/json"
     return response
 
