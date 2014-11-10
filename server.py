@@ -7,7 +7,7 @@ from sqlalchemy.orm.exc import NoResultFound, MultipleResultsFound
 from request_utils import send_request
 
 from multiprocessing import Process, Pool
-from threading import Timer
+from threading import Timer, Lock
 import os, json, logging, math, sys, uuid
 
 logging.basicConfig(level=logging.DEBUG)
@@ -44,6 +44,8 @@ class User(UserMixin):
         self.taken = taken
         self.skipped_chats = []
         self.terminate_timer = None
+        self.liked_users = []
+        self.lock = Lock()
 
         try:
             StoredUser.query.filter(StoredUser.uid == user_id).one()
@@ -73,7 +75,6 @@ class User(UserMixin):
 
     def terminate(self):
 
-        print "TERMINATED DUE TO TIMEOUT!"
         chat_id = ChatRoom.at_chat(self.uid)
         if ( chat_id ):
             ChatRoom.get_chat(chat_id).remove_user(self.uid)
@@ -92,6 +93,28 @@ class User(UserMixin):
             self.terminate_timer.cancel()
 
         self.terminate_timer = None
+
+    def like(self, user):
+
+        user.lock.acquire()
+        self.lock.acquire()
+
+        try:
+
+            if ( not user.get_id() in self.liked_users ):
+                self.liked_users.append(user.get_id())
+
+                if ( self.get_id() in user.liked_users ):
+                    #SHALL NOTIFY BOTH PARTIES OF MUTUAL INTEREST
+                    return "Both like each other!"
+                else:
+                    return "One likes the other!"
+            else:
+                return "One already likes the other!"
+
+        finally:
+            self.lock.release()
+            user.lock.release()
 
     def do_get_stored(self):
         return StoredUser.query.filter(StoredUser.uid == self.uid).first()
@@ -693,9 +716,18 @@ def send_message():
 @login_required
 def send_like(user_id):
 
-    current_user_id = current_user.get_id()
+    current_id = current_user.get_id()
+    current_u = User.get(current_id)
 
-    response = make_response(json.dumps({'server':'{} is interested in {}'.format(current_user_id, user_id), 'code':'ok'}), 200)
+    liked_u = User.get(user_id)
+    if ( liked_u == None ):
+        response = make_response(json.dumps({'server':'{} does not exist'.format(user_id), 'code':'error'}), 200)
+        response.headers["Content-Type"] = "application/json"
+        return response
+
+    veredict = current_u.like(liked_u)
+
+    response = make_response(json.dumps({'server':'{} is interested in {}: {}'.format(current_id, user_id, veredict), 'code':'ok'}), 200)
     response.headers["Content-Type"] = "application/json"
     return response
 
