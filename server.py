@@ -106,6 +106,11 @@ class User(UserMixin):
 
                 if ( self.get_id() in user.liked_users ):                    
                     do_notify_mutual_interest(self.get_id(), user.get_id())
+                    return "they both like each other now"
+                else:
+                    return "success"
+            else:
+                return "already registered"
 
         finally:
             self.lock.release()
@@ -763,9 +768,9 @@ def send_like(user_id):
         response.headers["Content-Type"] = "application/json"
         return response
 
-    current_u.like(liked_u)
+    veredict = current_u.like(liked_u)
 
-    response = make_response(json.dumps({'server':'{} is interested in {}'.format(current_id, user_id), 'code':'ok'}), 200)
+    response = make_response(json.dumps({'server':'{} is interested in {} : {}'.format(current_id, user_id, veredict), 'code':'ok'}), 200)
     response.headers["Content-Type"] = "application/json"
     return response
 
