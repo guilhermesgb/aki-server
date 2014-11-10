@@ -689,6 +689,16 @@ def send_message():
     response.headers["content-type"] = "application/json"
     return response
 
+@server.route('/like/<user_id>', methods=['POST'])
+@login_required
+def send_like(user_id):
+
+    current_user_id = current_user.get_id()
+
+    response = make_response(json.dumps({'server':'{} is interested in {}'.format(current_user_id, user_id), 'code':'ok'}), 200)
+    response.headers["Content-Type"] = "application/json"
+    return response
+
 @server.route('/shutdown', methods=['POST'])
 def shutdown():
 
