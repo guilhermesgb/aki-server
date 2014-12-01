@@ -407,7 +407,8 @@ def index():
             "ids": chat_room.ids,
             "center": chat_room.center,
             "radius": chat_room.radius,
-            "members": chat_room.members
+            "members": chat_room.members,
+            "messages": chat_room.messages
         })
 
     response = make_response(json.dumps({
