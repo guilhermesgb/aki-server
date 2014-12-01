@@ -8,7 +8,7 @@ from request_utils import send_request
 
 from multiprocessing import Process, Pool
 from threading import Timer, Lock
-import os, json, logging, math, sys, uuid
+import os, json, logging, math, sys, uuid, heapq, time
 
 logging.basicConfig(level=logging.DEBUG)
 
@@ -178,7 +178,9 @@ class ChatRoom:
         self.members = {}
         self.center = location
         self.radius = ChatRoom.MIN_RADIUS
+        self.messages = []
 
+        old_messages = []
         to_clean = []
 
         for chat_id in ChatRoom.chats:
@@ -195,6 +197,10 @@ class ChatRoom:
                         to_clean.append(chat_id)
                 self.ids.extend(chat_room.ids)
                 self.members.update(chat_room.members)
+                old_messages.append(chat_room.messages)
+
+        for message in heapq.merge(*old_messages):
+            self.messages.append(message)
 
         for chat_id in to_clean:
             del ChatRoom.chats[chat_id]
@@ -283,6 +289,12 @@ class ChatRoom:
             if ( chat_id in user.skipped_chats ):
                 return True
         return False
+
+    def add_message(self, sender_id, message):
+        heapq.heappush(self.messages, (time.time(), {
+            "sender": sender_id,
+            "message": message
+        }))
 
     @staticmethod
     def get_chat(chat_id):
@@ -637,6 +649,22 @@ def get_members():
     response.headers["Content-Type"] = "application/json"
     return response
 
+@server.route('/message/<int:amount>', methods=['GET'])
+@server.route('/message', methods=['GET'])
+@login_required
+def get_messages(amount=10):
+
+    user_id = current_user.get_id()
+    chat_id = ChatRoom.at_chat(user_id)
+    if ( chat_id ):
+        messages = [ x[1] for x in heapq.nsmallest(amount, ChatRoom.get_chat(chat_id).messages) ]
+        response = make_response(json.dumps({'server':'{} retrieved {} messages from chat {}'.format(user_id, len(messages), chat_id), 'code':'ok', 'messages': messages}), 200)
+    else:
+        response = make_response(json.dumps({'server':'{} is not in a chat room'.format(user_id), 'code':'error'}), 200)
+
+    response.headers["Content-Type"] = "application/json"
+    return response
+
 def do_send_message(sender, chat_room, message):
 
     database.session = database.create_scoped_session()
@@ -695,15 +723,33 @@ def send_message():
         response.headers["Content-Type"] = "application/json"
         return response
 
-    chat_room = data.get('chat_room', None)
+    chat_id = data.get('chat_room', None)
 
-    if ( chat_room == None ):
+    if ( chat_id == None ):
         response = make_response(json.dumps({'server':'chat_room field cannot be ommitted!', 'code':'error'}), 200)
         response.headers["Content-Type"] = "application/json"
         return response
 
+    current_chat_id = ChatRoom.at_chat(current_user.get_id())
+    if ( current_chat_id ):
+        chat_room = ChatRoom.get_chat(current_chat_id)
+        if ( chat_room == None ):
+            response = make_response(json.dumps({'server':'user ' + current_user.get_id() + '\'s current chat_room is gone!', 'code':'error'}), 200)
+            response.headers["Content-Type"] = "application/json"
+            return response
+        elif ( not chat_id in chat_room.ids ):
+            response = make_response(json.dumps({'server':'specified chat_room field value is invalid!', 'code':'error'}), 200)
+            response.headers["Content-Type"] = "application/json"
+            return response
+        else:
+            chat_room.add_message(current_user.get_id(), message)
+    else:
+        response = make_response(json.dumps({'server':'user ' + current_user.get_id() + ' is not currently in a chat_room!', 'code':'error'}), 200)
+        response.headers["Content-Type"] = "application/json"
+        return response
+
     p = Process(target=do_send_message,
-        args=(current_user.get_id(), chat_room, message))
+        args=(current_user.get_id(), chat_id, message))
     p.daemon = True
     p.start()
 
