@@ -650,6 +650,20 @@ def get_members():
     response.headers["Content-Type"] = "application/json"
     return response
 
+def get_msgs_after_tstamp(amount, source, after):
+
+    finished = False
+    messages = []
+    m = heapq.nsmallest(amount + 1, source,
+        key=lambda x: x[0] if x[0] < after else 0)
+    for i in range(1, len(m)):
+        if ( m[i-1][0] <= m[i][0] ):
+            messages.append(m[i])
+        else:
+            finished = True
+            break
+    return ( messages, finished )
+
 @server.route('/message/<int:amount>', methods=['GET'])
 @server.route('/message', methods=['GET'])
 @login_required
@@ -659,6 +673,7 @@ def get_messages(amount=10):
     chat_id = ChatRoom.at_chat(user_id)
     if ( chat_id ):
 
+        source = ChatRoom.get_chat(chat_id).messages
         finished = False
 
         after = request.args.get("next", None)
@@ -670,23 +685,14 @@ def get_messages(amount=10):
                 response.headers["Content-Type"] = "application/json"
                 return response
 
-            messages = []
-            m = heapq.nsmallest(amount + 2,
-                ChatRoom.get_chat(chat_id).messages,
-                key=lambda x: x[0] if x[0] < after else 0)
-            for i in range(1, len(m)):
-                if ( m[i-1][0] <= m[i][0] ):
-                    messages.append(m[i])
-                else:
-                    finished = True
-                    break
-            if not finished:
-                messages = messages[:-1]
+            messages, finished = get_msgs_after_tstamp(amount, source, after)
         else:
-            messages = heapq.nsmallest(amount,
-                ChatRoom.get_chat(chat_id).messages)
+            messages = heapq.nsmallest(amount, source)
 
         next = None if ( len(messages) == 0 or finished ) else messages[-1][0]
+        if ( next and len(get_msgs_after_tstamp(1, source, next)[0]) == 0 ):
+            next = None
+
         messages = [ x[1] for x in messages ]
 
         response = make_response(json.dumps({
