@@ -658,8 +658,45 @@ def get_messages(amount=10):
     user_id = current_user.get_id()
     chat_id = ChatRoom.at_chat(user_id)
     if ( chat_id ):
-        messages = [ x[1] for x in heapq.nsmallest(amount, ChatRoom.get_chat(chat_id).messages) ]
-        response = make_response(json.dumps({'server':'{} retrieved {} messages from chat {}'.format(user_id, len(messages), chat_id), 'code':'ok', 'messages': messages}), 200)
+
+        finished = False
+
+        after = request.args.get("next", None)
+        if ( after ):
+            try:
+                after = float(after)
+            except ValueError:
+                response = make_response(json.dumps({'server':"\'next\' argument requires a number, cannot be {}".format(after), 'code':'error'}), 200)
+                response.headers["Content-Type"] = "application/json"
+                return response
+
+            messages = []
+            m = heapq.nsmallest(amount + 2,
+                ChatRoom.get_chat(chat_id).messages,
+                key=lambda x: x[0] if x[0] < after else 0)
+            for i in range(1, len(m)):
+                if ( m[i-1][0] <= m[i][0] ):
+                    messages.append(m[i])
+                else:
+                    finished = True
+                    break
+            if not finished:
+                messages = messages[:-1]
+        else:
+            messages = heapq.nsmallest(amount,
+                ChatRoom.get_chat(chat_id).messages)
+
+        next = None if ( len(messages) == 0 or finished ) else messages[-1][0]
+        messages = [ x[1] for x in messages ]
+
+        response = make_response(json.dumps({
+            'server': '{} retrieved {} messages from chat {}'.format(user_id,
+                len(messages), chat_id),
+            'code': 'ok',
+            'messages': messages,
+            'next': next
+        }), 200)
+
     else:
         response = make_response(json.dumps({'server':'{} is not in a chat room'.format(user_id), 'code':'error'}), 200)
 
