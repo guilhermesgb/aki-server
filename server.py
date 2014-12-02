@@ -652,7 +652,6 @@ def get_members():
 
 def get_msgs_after_tstamp(amount, source, after):
 
-    finished = False
     messages = []
     m = heapq.nsmallest(amount + 1, source,
         key=lambda x: x[0] if x[0] < after else 0)
@@ -660,9 +659,8 @@ def get_msgs_after_tstamp(amount, source, after):
         if ( m[i-1][0] <= m[i][0] ):
             messages.append(m[i])
         else:
-            finished = True
             break
-    return ( messages, finished )
+    return messages
 
 @server.route('/message/<int:amount>', methods=['GET'])
 @server.route('/message', methods=['GET'])
@@ -674,7 +672,6 @@ def get_messages(amount=10):
     if ( chat_id ):
 
         source = ChatRoom.get_chat(chat_id).messages
-        finished = False
 
         after = request.args.get("next", None)
         if ( after ):
@@ -685,13 +682,13 @@ def get_messages(amount=10):
                 response.headers["Content-Type"] = "application/json"
                 return response
 
-            messages, finished = get_msgs_after_tstamp(amount, source, after)
+            messages = get_msgs_after_tstamp(amount, source, after)
         else:
             messages = heapq.nsmallest(amount, source)
 
-        next = None if ( len(messages) == 0 or finished ) else messages[-1][0]
-        if ( next and len(get_msgs_after_tstamp(1, source, next)[0]) == 0 ):
-            next = None
+        next = None if ( len(messages) == 0 ) else messages[-1][0]
+        remaining = len(get_msgs_after_tstamp(1, source, next)) if next else 0
+        finished = remaining == 0
 
         messages = [ x[1] for x in messages ]
 
@@ -700,7 +697,8 @@ def get_messages(amount=10):
                 len(messages), chat_id),
             'code': 'ok',
             'messages': messages,
-            'next': next
+            'next': next,
+            'finished': finished
         }), 200)
 
     else:
