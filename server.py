@@ -707,7 +707,10 @@ def get_messages(amount=10):
     response.headers["Content-Type"] = "application/json"
     return response
 
-def do_send_message(sender, chat_room, message):
+def do_send_message(sender, chat_ids, message):
+
+    if len(chat_ids) == 0:
+        return
 
     database.session = database.create_scoped_session()
 
@@ -724,9 +727,7 @@ def do_send_message(sender, chat_room, message):
     }
 
     payload = {
-        "channels": [
-            chat_room
-        ],      
+        "channels": chat_ids,
         "data" : data
     }
 
@@ -785,20 +786,20 @@ def send_message():
             return response
         else:
             chat_room.add_message(current_user.get_id(), message)
+
+            p = Process(target=do_send_message,
+                args=(current_user.get_id(), chat_room.ids, message))
+            p.daemon = True
+            p.start()
+
+            logging.info("just started ~send_message~ process")
+            response = make_response(json.dumps({'server':'message sent', 'code':'ok'}), 200)
+            response.headers["content-type"] = "application/json"
+            return response
     else:
         response = make_response(json.dumps({'server':'user ' + current_user.get_id() + ' is not currently in a chat_room!', 'code':'error'}), 200)
         response.headers["Content-Type"] = "application/json"
         return response
-
-    p = Process(target=do_send_message,
-        args=(current_user.get_id(), chat_id, message))
-    p.daemon = True
-    p.start()
-
-    logging.info("just started ~send_message~ process")
-    response = make_response(json.dumps({'server':'message sent', 'code':'ok'}), 200)
-    response.headers["content-type"] = "application/json"
-    return response
 
 def do_notify_mutual_interest(user_id1, user_id2):
 
