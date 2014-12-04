@@ -291,10 +291,12 @@ class ChatRoom:
         return False
 
     def add_message(self, sender_id, message):
-        heapq.heappush(self.messages, (time.time(), {
+        timestamp = time.time()
+        heapq.heappush(self.messages, (timestamp, {
             "sender": sender_id,
             "message": message
         }))
+        return timestamp
 
     @staticmethod
     def get_chat(chat_id):
@@ -722,7 +724,8 @@ def do_send_message(sender, chat_ids, message):
 
     data = {
         "from": sender,
-        "message": message,
+        "message": message["message"],
+        "timestamp": message["timestamp"],
         "action": "com.lespi.aki.receivers.INCOMING_MESSAGE",
     }
 
@@ -766,13 +769,6 @@ def send_message():
         response.headers["Content-Type"] = "application/json"
         return response
 
-#    chat_id = data.get('chat_room', None)
-#
-#    if ( chat_id == None ):
-#        response = make_response(json.dumps({'server':'chat_room field cannot be ommitted!', 'code':'error'}), 200)
-#        response.headers["Content-Type"] = "application/json"
-#        return response
-#
     current_chat_id = ChatRoom.at_chat(current_user.get_id())
     if ( current_chat_id ):
         chat_room = ChatRoom.get_chat(current_chat_id)
@@ -780,15 +776,15 @@ def send_message():
             response = make_response(json.dumps({'server':'user ' + current_user.get_id() + '\'s current chat_room is gone!', 'code':'error'}), 200)
             response.headers["Content-Type"] = "application/json"
             return response
-#        elif ( not chat_id in chat_room.ids ):
-#            response = make_response(json.dumps({'server':'specified chat_room field value is invalid!', 'code':'error'}), 200)
-#            response.headers["Content-Type"] = "application/json"
-#            return response
         else:
-            chat_room.add_message(current_user.get_id(), message)
+            timestamp = chat_room.add_message(current_user.get_id(), message)
 
             p = Process(target=do_send_message,
-                args=(current_user.get_id(), chat_room.ids, message))
+                args=(current_user.get_id(), chat_room.ids, {
+                  "message": message,
+                  "timestamp": timestamp
+                })
+            )
             p.daemon = True
             p.start()
 
