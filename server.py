@@ -779,14 +779,14 @@ def send_message():
         else:
             timestamp = chat_room.add_message(current_user.get_id(), message)
 
-            p = Process(target=do_send_message,
-                args=(current_user.get_id(), chat_room.ids, {
-                  "message": message,
-                  "timestamp": timestamp
-                })
-            )
-            p.daemon = True
-            p.start()
+#            p = Process(target=do_send_message,
+#                args=(current_user.get_id(), chat_room.ids, {
+#                  "message": message,
+#                  "timestamp": timestamp
+#                })
+#            )
+#            p.daemon = True
+#            p.start()
 
             logging.info("just started ~send_message~ process")
             response = make_response(json.dumps({'server':'message sent', 'code':'ok'}), 200)
