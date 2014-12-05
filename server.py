@@ -703,7 +703,7 @@ def get_messages(amount=10):
                 len(messages), chat_id),
             'code': 'ok',
             'messages': messages,
-            'next': str(int(next)).replace("L", ""),
+            'next': str(int(next)).replace("L", "") if next else None,
             'finished': finished
         }), 200)
 
