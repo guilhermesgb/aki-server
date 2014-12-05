@@ -678,7 +678,7 @@ def get_messages(amount=10):
         after = request.args.get("next", None)
         if ( after ):
             try:
-                after = float(after)
+                after = int(after)
             except ValueError:
                 response = make_response(json.dumps({'server':"\'next\' argument requires a number, cannot be {}".format(after), 'code':'error'}), 200)
                 response.headers["Content-Type"] = "application/json"
@@ -725,7 +725,7 @@ def do_send_message(sender, chat_ids, message):
     data = {
         "from": sender,
         "message": message["message"],
-        "timestamp": str(message["timestamp"]),
+        "timestamp": str(int(message["timestamp"])).replace("L", ""),
         "action": "com.lespi.aki.receivers.INCOMING_MESSAGE",
     }
 
