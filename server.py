@@ -8,7 +8,7 @@ from request_utils import send_request
 
 from multiprocessing import Process, Pool
 from threading import Timer, Lock
-import os, json, logging, math, sys, uuid, heapq, time
+import os, json, logging, math, sys, uuid, heapq, time, copy
 
 logging.basicConfig(level=logging.DEBUG)
 
@@ -657,13 +657,15 @@ def get_members():
 def get_msgs_after_tstamp(amount, source, after):
 
     messages = []
-    m = heapq.nsmallest(amount + 1, source,
-        key=lambda x: x[0] if x[0] < after else 0)
-    for i in range(1, len(m)):
-        if ( m[i-1][0] <= m[i][0] ):
-            messages.append(m[i])
-        else:
-            break
+
+    all_m = copy.deepcopy(source)
+    while ( len(all_m) > 0 and amount > 0 ):
+        message = heapq.heappop(all_m)
+        if ( message[0] <= after ):
+            continue
+        messages.append(message)
+        amount = amount - 1
+
     return messages
 
 @server.route('/message/<int:amount>', methods=['GET'])
