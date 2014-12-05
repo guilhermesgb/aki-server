@@ -738,7 +738,10 @@ def do_send_message(sender, chat_ids, message):
     }
 
     payload = {
-        "channels": chat_ids,
+        "where": {
+            "channels": chat_ids,
+            "inactive": True
+        },
         "data" : data
     }
 
@@ -787,14 +790,23 @@ def send_message():
         else:
             timestamp = chat_room.add_message(current_user.get_id(), message)
 
-#            p = Process(target=do_send_message,
-#                args=(current_user.get_id(), chat_room.ids, {
-#                  "message": message,
-#                  "timestamp": timestamp
-#                })
-#            )
-#            p.daemon = True
-#            p.start()
+            should_push = False
+            for member_id in chat_room.members:
+                member = User.get_stored(member_id)
+                if ( not member.taken ):
+                    should_push = True
+                    break
+
+            if ( should_push ):
+
+                p = Process(target=do_send_message,
+                    args=(current_user.get_id(), chat_room.ids, {
+                      "message": message,
+                      "timestamp": timestamp
+                    })
+                )
+                p.daemon = True
+                p.start()
 
             logging.info("just started ~send_message~ process")
             response = make_response(json.dumps({'server':'message sent', 'code':'ok'}), 200)
