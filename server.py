@@ -570,7 +570,8 @@ def send_presence(user_id):
             response = make_response(json.dumps({
                            'server':'presence sent (just authenticated)',
                            'chat_room': chat_room,
-                           'code':'ok'
+                           'code':'ok',
+                           'timestamp':str(int(time.time() * 1000000)).replace("L", "")
                        }), 200)
         else:
             logging.info("Presence sent not ok (login failed)")
