@@ -695,7 +695,7 @@ def get_messages(amount=10):
         messages = [ {
             "sender": x[1]["sender"],
             "message": x[1]["message"],
-            "timestamp": x[0]
+            "timestamp": str(int(x[0])).replace("L", "")
         } for x in messages ]
 
         response = make_response(json.dumps({
@@ -703,7 +703,7 @@ def get_messages(amount=10):
                 len(messages), chat_id),
             'code': 'ok',
             'messages': messages,
-            'next': next,
+            'next': str(int(next)).replace("L", ""),
             'finished': finished
         }), 200)
 
