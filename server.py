@@ -725,7 +725,7 @@ def do_send_message(sender, chat_ids, message):
     data = {
         "from": sender,
         "message": message["message"],
-        "timestamp": message["timestamp"],
+        "timestamp": str(message["timestamp"]),
         "action": "com.lespi.aki.receivers.INCOMING_MESSAGE",
     }
 
