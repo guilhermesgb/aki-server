@@ -613,6 +613,7 @@ def send_skip():
         chat_room = ChatRoom.get_chat(chat_id)
         User.get(user_id).skipped_chats.extend(chat_room.ids)
         chat_room.remove_user(user_id)
+    logout_user()
 
     response = make_response(json.dumps({'server':'{} just left'.format(user_id), 'code':'ok'}), 200)
     response.headers["Content-Type"] = "application/json"
