@@ -258,10 +258,10 @@ class ChatRoom:
 
         self.radius = radius
 
-        p = Process(target=do_update_center_and_radius,
-            args=(self.ids, center, radius))
-        p.daemon = True
-        p.start()
+#        p = Process(target=do_update_center_and_radius,
+#            args=(self.ids, center, radius))
+#        p.daemon = True
+#        p.start()
 
     def add_user(self, user_id, location):
         self.members[user_id] = {"location": location}
@@ -739,9 +739,9 @@ def do_send_message(sender, chat_ids, message):
 
     payload = {
         "where": {
-            "channels": chat_ids,
             "inactive": True
         },
+        "channels": chat_ids,
         "data" : data
     }
 
