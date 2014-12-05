@@ -737,13 +737,10 @@ def do_send_message(sender, chat_ids, message):
         "action": "com.lespi.aki.receivers.INCOMING_MESSAGE",
     }
 
-    channels = []
-    for chat_id in chat_ids:
-        channels.append(chat_id)
     payload = {
         "where": {
             "inactive": True,
-            "channels": channels
+            "channels": str(chat_ids)
         },
         "data" : data
     }
