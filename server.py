@@ -291,7 +291,7 @@ class ChatRoom:
         return False
 
     def add_message(self, sender_id, message):
-        timestamp = time.time()
+        timestamp = time.time() * 1000000
         heapq.heappush(self.messages, (timestamp, {
             "sender": sender_id,
             "message": message
