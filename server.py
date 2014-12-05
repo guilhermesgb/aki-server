@@ -740,7 +740,9 @@ def do_send_message(sender, chat_ids, message):
     payload = {
         "where": {
             "inactive": True,
-            "channels": str(chat_ids)
+            "channels": {
+                "$in": chat_ids
+            }
         },
         "data" : data
     }
