@@ -692,7 +692,11 @@ def get_messages(amount=10):
         remaining = len(get_msgs_after_tstamp(1, source, next)) if next else 0
         finished = remaining == 0
 
-        messages = [ x[1] for x in messages ]
+        messages = [ {
+            "sender": x[1]["sender"],
+            "message": x[1]["message"],
+            "timestamp": x[0]
+        } for x in messages ]
 
         response = make_response(json.dumps({
             'server': '{} retrieved {} messages from chat {}'.format(user_id,
