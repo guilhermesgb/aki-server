@@ -794,7 +794,7 @@ def send_message():
 
             should_push = False
             for member_id in chat_room.members:
-                member = User.get_stored(member_id)
+                member = User.get(member_id)
                 if ( not member.taken ):
                     should_push = True
                     break
