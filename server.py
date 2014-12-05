@@ -132,7 +132,7 @@ class User(UserMixin):
 
 def do_update_center_and_radius(chat_ids, center, radius):
 
-    database.session = database.create_scoped_session()
+#    database.session = database.create_scoped_session()
 
     headers = {
         "X-Parse-Application-Id": os.environ.get("PARSE_APPLICATION_ID", None),
@@ -445,7 +445,7 @@ def do_send_presence(chat_ids, user_data):
     if ( len(chat_ids) == 0 ):
         return
 
-    database.session = database.create_scoped_session()
+#    database.session = database.create_scoped_session()
 
     headers = {
         "X-Parse-Application-Id": os.environ.get("PARSE_APPLICATION_ID", None),
@@ -722,7 +722,7 @@ def do_send_message(sender, chat_ids, message):
     if len(chat_ids) == 0:
         return
 
-    database.session = database.create_scoped_session()
+#    database.session = database.create_scoped_session()
 
     headers = {
         "X-Parse-Application-Id": os.environ.get("PARSE_APPLICATION_ID", None),
@@ -794,15 +794,16 @@ def send_message():
 
             should_push = False
             for member_id in chat_room.members:
-                member = User.get(member_id)
+                member = User.get_stored(member_id)
                 if ( not member.taken ):
                     should_push = True
                     break
 
             if ( should_push ):
 
+                chat_ids = copy.deepcopy(chat_room.ids)
                 p = Process(target=do_send_message,
-                    args=(current_user.get_id(), chat_room.ids, {
+                    args=(current_user.get_id(), chat_ids, {
                       "message": message,
                       "timestamp": timestamp
                     })
@@ -836,7 +837,7 @@ def do_notify_mutual_interest(user_id1, user_id2):
     if ( len(chat_ids) == 0 ):
         return
 
-    database.session = database.create_scoped_session()
+#    database.session = database.create_scoped_session()
 
     headers = {
         "X-Parse-Application-Id": os.environ.get("PARSE_APPLICATION_ID", None),
