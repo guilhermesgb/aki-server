@@ -36,6 +36,7 @@ class StoredUser(database.Model):
 
 class User(UserMixin):
 
+    MAX_INACTIVE_TIME = 10 * 60 #10 minutes
     users = {}
 
     def __init__(self, user_id, taken=True):
@@ -84,7 +85,7 @@ class User(UserMixin):
         if ( self.terminate_timer ):
             self.terminate_timer.cancel()
 
-        self.terminate_timer = Timer(120.0, self.terminate)
+        self.terminate_timer = Timer(User.MAX_INACTIVE_TIME, self.terminate)
         self.terminate_timer.start()
 
     def cancel_terminate_timer(self):
