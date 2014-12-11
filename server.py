@@ -148,6 +148,26 @@ class User(UserMixin):
             self.lock.release()
             user.lock.release()
 
+    def unlike(self, user):
+
+        user.lock.acquire()
+        self.lock.acquire()
+
+        try:
+
+            uid1 = self.get_id()
+            uid2 = user.get_id()
+
+            if ( uid2 in self.liked_users ):
+                self.liked_users.remove(uid2)
+                return True
+
+            return False
+
+        finally:
+            self.lock.release()
+            user.lock.release()
+
     def do_get_stored(self):
         return StoredUser.query.filter(StoredUser.uid == self.uid).first()
 
@@ -936,6 +956,32 @@ def send_like(user_id):
     current_u.like(liked_u)
 
     response = make_response(json.dumps({'server':'{} is interested in {}'.format(current_id, user_id), 'code':'ok'}), 200)
+    response.headers["Content-Type"] = "application/json"
+    return response
+
+@server.route('/unlike/<user_id>', methods=['POST'])
+@login_required
+def send_unlike(user_id):
+
+    current_id = current_user.get_id()
+    current_u = User.get(current_id)
+
+    unliked_u = User.get(user_id)
+    if ( unliked_u == None ):
+        response = make_response(json.dumps({'server':'{} does not exist'.format(user_id), 'code':'error'}), 200)
+        response.headers["Content-Type"] = "application/json"
+        return response
+    if ( current_id == user_id ):
+        response = make_response(json.dumps({'server':'{} cannot like oneself'.format(user_id), 'code':'error'}), 200)
+        response.headers["Content-Type"] = "application/json"
+        return response
+
+    if ( not current_u.unlike(unliked_u) ):
+        response = make_response(json.dumps({'server':'{} didn\'t like {}'.format(current_id, user_id), 'code':'error'}), 200)
+        response.headers["Content-Type"] = "application/json"
+        return response
+
+    response = make_response(json.dumps({'server':'{} lost interest in {}'.format(current_id, user_id), 'code':'ok'}), 200)
     response.headers["Content-Type"] = "application/json"
     return response
 
