@@ -148,7 +148,7 @@ class User(UserMixin):
             self.lock.release()
             user.lock.release()
 
-    def unlike(self, user):
+    def dislike(self, user):
 
         user.lock.acquire()
         self.lock.acquire()
@@ -959,15 +959,15 @@ def send_like(user_id):
     response.headers["Content-Type"] = "application/json"
     return response
 
-@server.route('/unlike/<user_id>', methods=['POST'])
+@server.route('/dislike/<user_id>', methods=['POST'])
 @login_required
-def send_unlike(user_id):
+def send_dislike(user_id):
 
     current_id = current_user.get_id()
     current_u = User.get(current_id)
 
-    unliked_u = User.get(user_id)
-    if ( unliked_u == None ):
+    disliked_u = User.get(user_id)
+    if ( disliked_u == None ):
         response = make_response(json.dumps({'server':'{} does not exist'.format(user_id), 'code':'error'}), 200)
         response.headers["Content-Type"] = "application/json"
         return response
@@ -976,7 +976,7 @@ def send_unlike(user_id):
         response.headers["Content-Type"] = "application/json"
         return response
 
-    if ( not current_u.unlike(unliked_u) ):
+    if ( not current_u.dislike(disliked_u) ):
         response = make_response(json.dumps({'server':'{} didn\'t like {}'.format(current_id, user_id), 'code':'error'}), 200)
         response.headers["Content-Type"] = "application/json"
         return response
