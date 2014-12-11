@@ -20,16 +20,30 @@ server.config['SQLALCHEMY_DATABASE_URI'] = os.environ.get(
 login_manager = LoginManager(server)
 database = SQLAlchemy(server)
 
+class MutualInterest(database.Model):
+
+    __tablename__ = 'mutual'
+    id = database.Column(database.Integer, primary_key=True)
+    uid1 = database.Column(database.String(20), unique=True)
+    uid2 = database.Column(database.String(20), unique=True)
+
+    def __init__(self, uid1, uid2):
+        self.uid1 = uid1
+        self.uid2 = uid2
+
+    def __repr__(self):
+        return "<Mutual {} & {}>".format(self.uid1, self.uid2)
+
 class StoredUser(database.Model):
 
     __tablename__ = 'person'
     id = database.Column(database.Integer, primary_key=True)
     uid = database.Column(database.String(20), unique=True)
-    taken = database.Column(database.Boolean)
+    active = database.Column(database.Boolean)
 
-    def __init__(self, user_id, taken=False):
+    def __init__(self, user_id, active=False):
         self.uid = user_id
-        self.taken = taken
+        self.active = active
 
     def __repr__(self):
         return "<Username {}>".format(self.uid)
@@ -39,14 +53,15 @@ class User(UserMixin):
     MAX_INACTIVE_TIME = 10 * 60 #10 minutes
     users = {}
 
-    def __init__(self, user_id, taken=True):
+    def __init__(self, user_id, active=True):
 
         self.uid = user_id
-        self.taken = taken
+        self.active = active
         self.skipped_chats = []
         self.terminate_timer = None
         self.liked_users = []
         self.lock = Lock()
+        self.flag_mutual_interest = False
 
         try:
             StoredUser.query.filter(StoredUser.uid == user_id).one()
@@ -102,16 +117,32 @@ class User(UserMixin):
 
         try:
 
-            if ( not user.get_id() in self.liked_users ):
-                self.liked_users.append(user.get_id())
+            uid1 = self.get_id()
+            uid2 = user.get_id()
 
-                if ( self.get_id() in user.liked_users ):                    
-                    do_notify_mutual_interest(self.get_id(), user.get_id())
-                    return "they both like each other now"
-                else:
-                    return "success"
-            else:
-                return "already registered"
+            if ( not uid2 in self.liked_users ):
+                self.liked_users.append(uid2)
+
+                if ( uid1 in user.liked_users ):
+
+                    repetitions = MutualInterest.query.filter(
+                        MutualInterest.uid1 == uid1,
+                        MutualInterest.uid2 == uid2
+                    ).count()
+                    repetitions += MutualInterest.query.filter(
+                        MutualInterest.uid1 == uid2,
+                        MutualInterest.uid2 == uid1
+                    ).count()
+
+                    if ( repetitions > 0 ):
+                        return
+
+                    database.session.add(MutualInterest(uid1, uid2))
+                    database.session.commit()
+
+                    self.flag_mutual_interest = True
+                    user.flag_mutual_interest = True
+                    do_notify_mutual_interest(uid1, uid2)
 
         finally:
             self.lock.release()
@@ -132,8 +163,6 @@ class User(UserMixin):
         return None
 
 def do_update_center_and_radius(chat_ids, center, radius):
-
-#    database.session = database.create_scoped_session()
 
     headers = {
         "X-Parse-Application-Id": os.environ.get("PARSE_APPLICATION_ID", None),
@@ -358,7 +387,9 @@ class ChatRoom:
 
     @staticmethod
     def assign_chat(user_id, location):
+        u = User.get(user_id)
         if ( location == "unknown" ):
+            u.liked_users = []
             return None, []
         chat_id = ChatRoom.at_chat(user_id)
         if ( chat_id ):
@@ -368,13 +399,14 @@ class ChatRoom:
                 return ChatRoom.assign_chat(user_id, location)
             return chat_id, chat_room.ids
         else:
+            u.liked_users = []
             closest = ChatRoom.closest(user_id, location)
             if ( closest ):
                 closest.add_user(user_id, location)
                 return closest.ids[0], closest.ids
             else:
                 chat_room = ChatRoom(location, user_id)
-                User.get(user_id).skipped_chats = []
+                u.skipped_chats = []
                 return chat_room.ids[0], chat_room.ids
 
 
@@ -398,9 +430,11 @@ def index():
     users = []
     for user in User.users:
         u = User.get_stored(user)
+        u_ = User.get(user)
         users.append({
             'user_id' : u.uid,
-            'status' : 'active' if u.taken else 'inactive'
+            'status' : 'active' if u.active else 'inactive',
+            'liked': u_.liked_users
         })
 
     chats = []
@@ -445,8 +479,6 @@ def do_send_presence(chat_ids, user_data):
 
     if ( len(chat_ids) == 0 ):
         return
-
-#    database.session = database.create_scoped_session()
 
     headers = {
         "X-Parse-Application-Id": os.environ.get("PARSE_APPLICATION_ID", None),
@@ -534,10 +566,11 @@ def send_presence(user_id):
             response = make_response(json.dumps({'server':'presence fail (you are someone else)', 'code':'error'}), 200)
         else:
             u = User.get_stored(user_id)
-            u.taken = True
+            u.active = True
             database.session.add(u)
             database.session.commit()
-            User.get(user_id).cancel_terminate_timer()
+            u_ = User.get(user_id)
+            u_.cancel_terminate_timer()
             logging.info("Presence sent ok")
             chat_room, chat_ids = ChatRoom.assign_chat(user_id, location)
 
@@ -546,20 +579,25 @@ def send_presence(user_id):
             p.daemon = True
             p.start()
 
-            response = make_response(json.dumps({
-                           'server':'presence sent (already authenticated)',
-                           'chat_room': chat_room,
-                           'code':'ok'
-                       }), 200)
+            response = {
+                'server':'presence sent (already authenticated)',
+                'chat_room': chat_room,
+                'code':'ok'
+            }
+            if ( u_.flag_mutual_interest ):
+                response["update_mutual_interests"] = True
+                u_.flag_mutual_interest = False
+            response = make_response(json.dumps(response), 200)
     else:
 
         User(user_id)
         u = User.get_stored(user_id)
         if ( login_user(User.get(user_id), remember=True) ):
-            u.taken = True
+            u.active = True
             database.session.add(u)
             database.session.commit()
-            User.get(user_id).cancel_terminate_timer()
+            u_ = User.get(user_id)
+            u_.cancel_terminate_timer()
             logging.info("Presence sent ok (by logging)")
             chat_room, chat_ids = ChatRoom.assign_chat(user_id, location)
 
@@ -568,12 +606,16 @@ def send_presence(user_id):
             p.daemon = True
             p.start()
 
-            response = make_response(json.dumps({
-                           'server':'presence sent (just authenticated)',
-                           'chat_room': chat_room,
-                           'code':'ok',
-                           'timestamp':str(int(time.time() * 1000000)).replace("L", "")
-                       }), 200)
+            response = {
+                'server':'presence sent (just authenticated)',
+                'chat_room': chat_room,
+                'code':'ok',
+                'timestamp':str(int(time.time() * 1000000)).replace("L", "")
+            }
+            if ( u_.flag_mutual_interest ):
+                response["update_mutual_interests"] = True
+                u_.flag_mutual_interest = False
+            response = make_response(json.dumps(response), 200)
         else:
             logging.info("Presence sent not ok (login failed)")
             response = make_response(json.dumps({'server':'presence fail (login fail)', 'code':'error'}), 200)
@@ -588,7 +630,7 @@ def send_inactive():
     user_id = current_user.get_id()
 
     u = User.get_stored(user_id)
-    u.taken = False
+    u.active = False
     database.session.add(u)
     database.session.commit()
 
@@ -605,9 +647,12 @@ def send_skip():
     user_id = current_user.get_id()
 
     u = User.get_stored(user_id)
-    u.taken = False
+    u.active = False
     database.session.add(u)
     database.session.commit()
+
+    u_ = User.get(user_id)
+    u_.liked_users = []
 
     chat_id = ChatRoom.at_chat(user_id)
     if ( chat_id ):
@@ -627,9 +672,12 @@ def send_exit():
     user_id = current_user.get_id()
 
     u = User.get_stored(user_id)
-    u.taken = False
+    u.active = False
     database.session.add(u)
     database.session.commit()
+
+    u_ = User.get(user_id)
+    u_.liked_users = []
 
     chat_id = ChatRoom.at_chat(user_id)
     if ( chat_id ):
@@ -723,8 +771,6 @@ def do_send_message(sender, chat_ids, message):
     if len(chat_ids) == 0:
         return
 
-#    database.session = database.create_scoped_session()
-
     headers = {
         "X-Parse-Application-Id": os.environ.get("PARSE_APPLICATION_ID", None),
         "X-Parse-REST-API-Key": os.environ.get("PARSE_REST_API_KEY", None),
@@ -796,7 +842,7 @@ def send_message():
             should_push = False
             for member_id in chat_room.members:
                 member = User.get_stored(member_id)
-                if ( not member.taken ):
+                if ( not member.active ):
                     should_push = True
                     break
 
@@ -821,24 +867,22 @@ def send_message():
         response.headers["Content-Type"] = "application/json"
         return response
 
-def do_notify_mutual_interest(user_id1, user_id2):
+def do_notify_mutual_interest(uid1, uid2):
 
     chat_ids = []
 
-    chat_id1 = ChatRoom.at_chat(user_id1)
+    chat_id1 = ChatRoom.at_chat(uid1)
     if ( chat_id1 ):
         chat_room = ChatRoom.get_chat(chat_id1)
         chat_ids.extend(chat_room.ids)
 
-    chat_id2 = ChatRoom.at_chat(user_id2)
+    chat_id2 = ChatRoom.at_chat(uid2)
     if ( chat_id2 ):
         chat_room = ChatRoom.get_chat(chat_id2)
         chat_ids.extend(chat_room.ids)
 
     if ( len(chat_ids) == 0 ):
         return
-
-#    database.session = database.create_scoped_session()
 
     headers = {
         "X-Parse-Application-Id": os.environ.get("PARSE_APPLICATION_ID", None),
@@ -847,10 +891,18 @@ def do_notify_mutual_interest(user_id1, user_id2):
     }
 
     user_data = {
-        "alert" : "Mutual interest detected between user {} and {}!".format(user_id1, user_id2)
+        "action" : "com.lespi.aki.receivers.INCOMING_MUTUAL_INTEREST_UPDATE"
     }
 
     payload = {
+        "where": {
+            "channels": {
+                "$in": chat_ids
+            },
+            "uid": {
+                "$in": [ uid1, uid2 ]
+            }
+        },
         "channels": chat_ids,
         "data" : user_data
     }
@@ -876,10 +928,14 @@ def send_like(user_id):
         response = make_response(json.dumps({'server':'{} does not exist'.format(user_id), 'code':'error'}), 200)
         response.headers["Content-Type"] = "application/json"
         return response
+    if ( current_id == user_id ):
+        response = make_response(json.dumps({'server':'{} cannot like oneself'.format(user_id), 'code':'error'}), 200)
+        response.headers["Content-Type"] = "application/json"
+        return response
 
-    veredict = current_u.like(liked_u)
+    current_u.like(liked_u)
 
-    response = make_response(json.dumps({'server':'{} is interested in {} : {}'.format(current_id, user_id, veredict), 'code':'ok'}), 200)
+    response = make_response(json.dumps({'server':'{} is interested in {}'.format(current_id, user_id), 'code':'ok'}), 200)
     response.headers["Content-Type"] = "application/json"
     return response
 
@@ -937,7 +993,7 @@ if __name__ == "__main__":
     database.create_all()
 
     for user in StoredUser.query.all():
-        user.taken = False
+        user.active = False
         database.session.add(user)
     database.session.commit()
     server.run(host="0.0.0.0", port=port)
