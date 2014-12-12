@@ -911,7 +911,9 @@ def do_notify_mutual_interest(uid1, uid2):
     }
 
     user_data = {
-        "action" : "com.lespi.aki.receivers.INCOMING_MUTUAL_INTEREST_UPDATE"
+        "action" : "com.lespi.aki.receivers.INCOMING_MUTUAL_INTEREST_UPDATE",
+        "uid1": uid1,
+        "uid2": uid2
     }
 
     payload = {
