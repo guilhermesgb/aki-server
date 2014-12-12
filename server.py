@@ -985,6 +985,32 @@ def send_dislike(user_id):
     response.headers["Content-Type"] = "application/json"
     return response
 
+@server.route('/mutual', methods=['GET'])
+def get_mutual():
+
+    current_id = current_user.get_id()
+
+    results = []
+
+    mutuals = MutualInterest.query.filter(
+        MutualInterest.uid1 == current_id
+    )
+    for mutual in mutuals:
+        results.append(mutual.uid2)
+    mutuals = MutualInterest.query.filter(
+        MutualInterest.uid2 == current_id
+    )
+    for mutual in mutuals:
+        results.append(mutual.uid1)
+
+    response = make_response(json.dumps({
+        'server':'retrieved {}\'s mutual interests'.format(current_id),
+        'mutuals': results,
+        'code':'ok'
+    }), 200)
+    response.headers["Content-Type"] = "application/json"
+    return response
+
 @server.route('/shutdown', methods=['POST'])
 def shutdown():
 
