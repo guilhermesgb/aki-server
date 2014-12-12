@@ -771,14 +771,21 @@ def get_messages(amount=10):
             "timestamp": str(int(x[0])).replace("L", "")
         } for x in messages ]
 
-        response = make_response(json.dumps({
+        response = {
             'server': '{} retrieved {} messages from chat {}'.format(user_id,
                 len(messages), chat_id),
             'code': 'ok',
             'messages': messages,
             'next': str(int(next)).replace("L", "") if next else None,
             'finished': finished
-        }), 200)
+        }
+
+        u = User.get(user_id)
+        if ( u.flag_mutual_interest ):
+            response["update_mutual_interests"] = True
+            u.flag_mutual_interest = False
+
+        response = make_response(json.dumps(response), 200)
 
     else:
         response = make_response(json.dumps({'server':'{} is not in a chat room'.format(user_id), 'code':'error'}), 200)
