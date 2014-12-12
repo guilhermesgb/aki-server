@@ -24,8 +24,8 @@ class MutualInterest(database.Model):
 
     __tablename__ = 'mutual'
     id = database.Column(database.Integer, primary_key=True)
-    uid1 = database.Column(database.String(20), unique=True)
-    uid2 = database.Column(database.String(20), unique=True)
+    uid1 = database.Column(database.String(20))
+    uid2 = database.Column(database.String(20))
 
     def __init__(self, uid1, uid2):
         self.uid1 = uid1
