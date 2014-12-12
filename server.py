@@ -996,12 +996,16 @@ def get_mutual():
         MutualInterest.uid1 == current_id
     )
     for mutual in mutuals:
-        results.append(mutual.uid2)
+        results.append({
+            'uid': mutual.uid2
+        })
     mutuals = MutualInterest.query.filter(
         MutualInterest.uid2 == current_id
     )
     for mutual in mutuals:
-        results.append(mutual.uid1)
+        results.append({
+            'uid': mutual.uid1
+        })
 
     response = make_response(json.dumps({
         'server':'retrieved {}\'s mutual interests'.format(current_id),
