@@ -606,7 +606,6 @@ def send_presence(user_id):
             }
             if ( u_.flag_mutual_interest ):
                 response["update_mutual_interests"] = True
-                u_.flag_mutual_interest = False
             response = make_response(json.dumps(response), 200)
     else:
 
@@ -634,7 +633,6 @@ def send_presence(user_id):
             }
             if ( u_.flag_mutual_interest ):
                 response["update_mutual_interests"] = True
-                u_.flag_mutual_interest = False
             response = make_response(json.dumps(response), 200)
         else:
             logging.info("Presence sent not ok (login failed)")
@@ -783,8 +781,6 @@ def get_messages(amount=10):
         u = User.get(user_id)
         if ( u.flag_mutual_interest ):
             response["update_mutual_interests"] = True
-            u.flag_mutual_interest = False
-
         response = make_response(json.dumps(response), 200)
 
     else:
@@ -998,6 +994,8 @@ def send_dislike(user_id):
 def get_mutual():
 
     current_id = current_user.get_id()
+    u = User.get(current_id)
+    u.flag_mutual_interest = False
 
     results = []
 
