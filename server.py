@@ -177,7 +177,8 @@ class User(UserMixin):
 
     @staticmethod
     def get_stored(uid):
-        u = User.users.get(uid, None)
+#*        u = User.users.get(uid, None)
+        u = User.users.get(uid, User(uid))
         if ( u != None ):
             return u.do_get_stored()
         return None
