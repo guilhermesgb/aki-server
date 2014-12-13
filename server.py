@@ -162,9 +162,6 @@ class User(UserMixin):
 
             if ( uid2 in self.liked_users ):
                 self.liked_users.remove(uid2)
-                return True
-
-            return False
 
         finally:
             self.lock.release()
@@ -994,10 +991,8 @@ def send_dislike(user_id):
         response.headers["Content-Type"] = "application/json"
         return response
 
-    if ( current_u.dislike(disliked_u) ):
-        response = make_response(json.dumps({'server':'{} lost interest in {}'.format(current_id, user_id), 'code':'ok'}), 200)
-    else:
-        response = make_response(json.dumps({'server':'{} didn\'t like {}'.format(current_id, user_id), 'code':'error'}), 200)
+    current_u.dislike(disliked_u)
+    response = make_response(json.dumps({'server':'{} lost interest in {}'.format(current_id, user_id), 'code':'ok'}), 200)
     response.headers["Content-Type"] = "application/json"
     return response
 
