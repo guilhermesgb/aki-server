@@ -1051,7 +1051,8 @@ def delete_mutual(user_id=None):
     database.session.commit()
 
     u = User.get(user_id)
-    u.flag_mutual_interest = True
+    if ( u ):
+        u.flag_mutual_interest = True
 
     response = make_response(json.dumps({
         'server':'mutual interest between {} and {} removed'.format(current_id, user_id),
