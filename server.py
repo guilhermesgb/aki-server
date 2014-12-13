@@ -125,16 +125,15 @@ class User(UserMixin):
 
                 if ( uid1 in user.liked_users ):
 
-                    repetitions = MutualInterest.query.filter(
+                    repeats = len(MutualInterest.query.filter(
                         MutualInterest.uid1 == uid1,
                         MutualInterest.uid2 == uid2
-                    ).count()
-                    repetitions += MutualInterest.query.filter(
+                    ).all())
+                    repeats += len(MutualInterest.query.filter(
                         MutualInterest.uid1 == uid2,
                         MutualInterest.uid2 == uid1
-                    ).count()
-
-                    if ( repetitions > 0 ):
+                    ).all())
+                    if ( repeats > 0 ):
                         return
 
                     database.session.add(MutualInterest(uid1, uid2))
@@ -142,7 +141,10 @@ class User(UserMixin):
 
                     self.flag_mutual_interest = True
                     user.flag_mutual_interest = True
-                    do_notify_mutual_interest(uid1, uid2)
+                    p = Process(target=do_notify_mutual_interest,
+                        args=(uid1, uid2))
+                    p.daemon = True
+                    p.start()
 
         finally:
             self.lock.release()
@@ -677,6 +679,8 @@ def send_skip():
         chat_room = ChatRoom.get_chat(chat_id)
         User.get(user_id).skipped_chats.extend(chat_room.ids)
         chat_room.remove_user(user_id)
+    else:
+        response = make_response(json.dumps({'server':'{} is not in a chat room'.format(user_id), 'code':'error'}), 200)
     logout_user()
 
     response = make_response(json.dumps({'server':'{} just left'.format(user_id), 'code':'ok'}), 200)
@@ -700,6 +704,8 @@ def send_exit():
     chat_id = ChatRoom.at_chat(user_id)
     if ( chat_id ):
         ChatRoom.get_chat(chat_id).remove_user(user_id)
+    else:
+        response = make_response(json.dumps({'server':'{} is not in a chat room'.format(user_id), 'code':'error'}), 200)
     logout_user()
 
     response = make_response(json.dumps({'server':'{} just left'.format(user_id), 'code':'ok'}), 200)
@@ -886,7 +892,7 @@ def send_message():
             response.headers["content-type"] = "application/json"
             return response
     else:
-        response = make_response(json.dumps({'server':'user ' + current_user.get_id() + ' is not currently in a chat_room!', 'code':'error'}), 200)
+        response = make_response(json.dumps({'server':current_user.get_id() + ' is not in a chat_room!', 'code':'error'}), 200)
         response.headers["Content-Type"] = "application/json"
         return response
 
@@ -958,9 +964,16 @@ def send_like(user_id):
         response.headers["Content-Type"] = "application/json"
         return response
 
-    current_u.like(liked_u)
+    chat_id = ChatRoom.at_chat(current_id)
+    if ( chat_id ):
+        chat_room = ChatRoom.get_chat(chat_id)
+        if ( user_id in chat_room.members ):
+            current_u.like(liked_u)
+            response = make_response(json.dumps({'server':'{} is interested in {}'.format(current_id, user_id), 'code':'ok'}), 200)
+            response.headers["Content-Type"] = "application/json"
+            return response
 
-    response = make_response(json.dumps({'server':'{} is interested in {}'.format(current_id, user_id), 'code':'ok'}), 200)
+    response = make_response(json.dumps({'server':'{} is not in the same chat_room as you'.format(user_id), 'code':'error'}), 200)
     response.headers["Content-Type"] = "application/json"
     return response
 
@@ -981,12 +994,10 @@ def send_dislike(user_id):
         response.headers["Content-Type"] = "application/json"
         return response
 
-    if ( not current_u.dislike(disliked_u) ):
+    if ( current_u.dislike(disliked_u) ):
+        response = make_response(json.dumps({'server':'{} lost interest in {}'.format(current_id, user_id), 'code':'ok'}), 200)
+    else:
         response = make_response(json.dumps({'server':'{} didn\'t like {}'.format(current_id, user_id), 'code':'error'}), 200)
-        response.headers["Content-Type"] = "application/json"
-        return response
-
-    response = make_response(json.dumps({'server':'{} lost interest in {}'.format(current_id, user_id), 'code':'ok'}), 200)
     response.headers["Content-Type"] = "application/json"
     return response
 
