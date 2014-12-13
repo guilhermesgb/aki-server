@@ -946,7 +946,7 @@ def do_notify_mutual_interest(uid1, uid2):
 
 @server.route('/like/<user_id>', methods=['POST'])
 @login_required
-def send_like(user_id):
+def send_like(user_id=None):
 
     current_id = current_user.get_id()
     current_u = User.get(current_id)
@@ -976,7 +976,7 @@ def send_like(user_id):
 
 @server.route('/dislike/<user_id>', methods=['POST'])
 @login_required
-def send_dislike(user_id):
+def send_dislike(user_id=None):
 
     current_id = current_user.get_id()
     current_u = User.get(current_id)
@@ -997,6 +997,7 @@ def send_dislike(user_id):
     return response
 
 @server.route('/mutual', methods=['GET'])
+@login_required
 def get_mutual():
 
     current_id = current_user.get_id()
@@ -1007,14 +1008,14 @@ def get_mutual():
 
     mutuals = MutualInterest.query.filter(
         MutualInterest.uid1 == current_id
-    )
+    ).all()
     for mutual in mutuals:
         results.append({
             'uid': mutual.uid2
         })
     mutuals = MutualInterest.query.filter(
         MutualInterest.uid2 == current_id
-    )
+    ).all()
     for mutual in mutuals:
         results.append({
             'uid': mutual.uid1
@@ -1023,6 +1024,37 @@ def get_mutual():
     response = make_response(json.dumps({
         'server':'retrieved {}\'s mutual interests'.format(current_id),
         'mutuals': results,
+        'code':'ok'
+    }), 200)
+    response.headers["Content-Type"] = "application/json"
+    return response
+
+@server.route('/mutual/<user_id>', methods=['DELETE'])
+@login_required
+def delete_mutual(user_id=None):
+
+    current_id = current_user.get_id()
+
+    mutuals = MutualInterest.query.filter(
+        MutualInterest.uid1 == current_id,
+        MutualInterest.uid2 == user_id
+    ).all()
+    for mutual in mutuals:
+        database.session.delete(mutual)
+    mutuals = MutualInterest.query.filter(
+        MutualInterest.uid1 == user_id,
+        MutualInterest.uid2 == current_id
+    ).all()
+    for mutual in mutuals:
+        database.session.delete(mutual)
+
+    database.session.commit()
+
+    u = User.get(user_id)
+    u.flag_mutual_interest = True
+
+    response = make_response(json.dumps({
+        'server':'mutual interest between {} and {} removed'.format(current_id, user_id),
         'code':'ok'
     }), 200)
     response.headers["Content-Type"] = "application/json"
@@ -1052,7 +1084,6 @@ def shutdown():
         response = make_response(json.dumps({'server':'payload must be valid json', 'code':'error'}), 200)
         response.headers["Content-Type"] = "application/json"
         return response
-
 
     provided = data.get("authorization", None)
     if ( provided == None ):
