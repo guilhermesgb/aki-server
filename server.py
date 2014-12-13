@@ -997,6 +997,7 @@ def send_dislike(user_id):
     return response
 
 @server.route('/mutual', methods=['GET'])
+@login_required
 def get_mutual():
 
     current_id = current_user.get_id()
