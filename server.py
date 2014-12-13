@@ -172,13 +172,11 @@ class User(UserMixin):
 
     @staticmethod
     def get(uid):
-#*        return User.users.get(uid, None)
-        return User.users.get(uid, User(uid))
+        return User.users.get(uid, None)
 
     @staticmethod
     def get_stored(uid):
-#*        u = User.users.get(uid, None)
-        u = User.users.get(uid, User(uid))
+        u = User.users.get(uid, None)
         if ( u != None ):
             return u.do_get_stored()
         return None
@@ -610,7 +608,7 @@ def send_presence(user_id):
             response = make_response(json.dumps(response), 200)
     else:
 
-#*        User(user_id)
+        User(user_id)
         u = User.get_stored(user_id)
         if ( login_user(User.get(user_id), remember=True) ):
             u.active = True
