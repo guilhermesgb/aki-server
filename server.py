@@ -600,6 +600,7 @@ def send_presence(user_id):
     user_data["location"] = location
 
     if ( location != "unknown" ):
+        print "location", location
         location["lat"] = float(location["lat"])
         location["long"] = float(location["long"])
 
@@ -618,7 +619,8 @@ def send_presence(user_id):
             logging.info("Presence sent ok")
             chat_id, chat_ids = ChatRoom.assign_chat(user_id, location)
             chat_room = ChatRoom.get_chat(chat_id)
-            chat_room.update_user(user_id, user_data)
+            if ( chat_room ):
+                chat_room.update_user(user_id, user_data)
 
             p = Process(target=do_send_presence,
                 args=(chat_ids, user_data))
@@ -646,7 +648,8 @@ def send_presence(user_id):
             logging.info("Presence sent ok (by logging)")
             chat_id, chat_ids = ChatRoom.assign_chat(user_id, location)
             chat_room = ChatRoom.get_chat(chat_id)
-            chat_room.update_user(user_id, user_data)
+            if ( chat_room ):
+                chat_room.update_user(user_id, user_data)
 
             p = Process(target=do_send_presence,
                 args=(chat_ids, user_data))
