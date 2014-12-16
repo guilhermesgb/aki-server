@@ -326,6 +326,15 @@ class ChatRoom:
         else:
             ChatRoom.remove_chat(self.ids[0])
 
+    def update_user(self, user_id, user_data):
+        if ( user_id in self.members.keys() ):
+            self.members[user_id]["location"] = user_data.get("location", self.members[user_id]["location"])
+	    self.members[user_id]["nickname"] = user_data.get("nickname", None)
+            self.members[user_id]["first_name"] = user_data.get("first_name", None)
+            self.members[user_id]["full_name"] = user_data.get("full_name", None)
+            self.members[user_id]["gender"] = user_data.get("gender", "unknown")
+            self.members[user_id]["anonymous"] = user_data.get("anonymous", True)
+
     def is_full(self):
         return len(self.members.keys()) >= ChatRoom.MAX_USERS_PER_ROOM
 
@@ -607,7 +616,9 @@ def send_presence(user_id):
             u_ = User.get(user_id)
             u_.cancel_terminate_timer()
             logging.info("Presence sent ok")
-            chat_room, chat_ids = ChatRoom.assign_chat(user_id, location)
+            chat_id, chat_ids = ChatRoom.assign_chat(user_id, location)
+            chat_room = ChatRoom.get_chat(chat_id)
+            chat_room.update_user(user_id, user_data)
 
             p = Process(target=do_send_presence,
                 args=(chat_ids, user_data))
@@ -616,7 +627,7 @@ def send_presence(user_id):
 
             response = {
                 'server':'presence sent (already authenticated)',
-                'chat_room': chat_room,
+                'chat_room': chat_id,
                 'code':'ok'
             }
             if ( u_.flag_mutual_interest ):
@@ -633,7 +644,9 @@ def send_presence(user_id):
             u_ = User.get(user_id)
             u_.cancel_terminate_timer()
             logging.info("Presence sent ok (by logging)")
-            chat_room, chat_ids = ChatRoom.assign_chat(user_id, location)
+            chat_id, chat_ids = ChatRoom.assign_chat(user_id, location)
+            chat_room = ChatRoom.get_chat(chat_id)
+            chat_room.update_user(user_id, user_data)
 
             p = Process(target=do_send_presence,
                 args=(chat_ids, user_data))
@@ -642,7 +655,7 @@ def send_presence(user_id):
 
             response = {
                 'server':'presence sent (just authenticated)',
-                'chat_room': chat_room,
+                'chat_room': chat_id,
                 'code':'ok',
                 'timestamp':str(int(time.time() * 1000000)).replace("L", "")
             }
