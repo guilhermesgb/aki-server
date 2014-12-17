@@ -727,7 +727,8 @@ def send_exit():
 
     chat_id = ChatRoom.at_chat(user_id)
     if ( chat_id ):
-        ChatRoom.get_chat(chat_id).remove_user(user_id)
+        chat_room = ChatRoom.get_chat(chat_id)
+        chat_room.remove_user(user_id)
 
         user_data = {
             "from": user_id,
