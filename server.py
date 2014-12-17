@@ -554,34 +554,18 @@ def send_presence(user_id):
     first_name = data.get('first_name', None)
     if ( first_name != None ):
         user_data["first_name"] = first_name
-#    else:
-#        response = make_response(json.dumps({'server':'first_name field cannot be ommitted!', 'code':'error'}), 200)
-#        response.headers["Content-Type"] = "application/json"
-#        return response
 
     full_name = data.get('full_name', None)
     if ( full_name != None ):
         user_data["full_name"] = full_name
-#    else:
-#        response = make_response(json.dumps({'server':'full_name field cannot be ommitted!', 'code':'error'}), 200)
-#        response.headers["Content-Type"] = "application/json"
-#        return response
 
     gender = data.get('gender', None)
     if ( gender != None ):
         user_data["gender"] = gender
-#    else:
-#        response = make_response(json.dumps({'server':'gender field cannot be ommitted!', 'code':'error'}), 200)
-#        response.headers["Content-Type"] = "application/json"
-#        return response
 
     nickname = data.get('nickname', None)
     if ( nickname != None ):
         user_data["nickname"] = nickname
-#    else:
-#        response = make_response(json.dumps({'server':'nickname field cannot be ommitted!', 'code':'error'}), 200)
-#        response.headers["Content-Type"] = "application/json"
-#        return response
 
     anonymous = data.get('anonymous', None)
     if ( anonymous == None ):
@@ -708,6 +692,17 @@ def send_skip():
         chat_room = ChatRoom.get_chat(chat_id)
         User.get(user_id).skipped_chats.extend(chat_room.ids)
         chat_room.remove_user(user_id)
+
+        user_data = {
+            "from": user_id,
+            "anonymous": True,
+            "location": "unknown"
+        }
+
+        p = Process(target=do_send_presence,
+            args=(chat_room.ids, user_data))
+        p.daemon = True
+        p.start()
     else:
         response = make_response(json.dumps({'server':'{} is not in a chat room'.format(user_id), 'code':'error'}), 200)
     logout_user()
@@ -733,6 +728,17 @@ def send_exit():
     chat_id = ChatRoom.at_chat(user_id)
     if ( chat_id ):
         ChatRoom.get_chat(chat_id).remove_user(user_id)
+
+        user_data = {
+            "from": user_id,
+            "anonymous": True,
+            "location": "unknown"
+        }
+
+        p = Process(target=do_send_presence,
+            args=(chat_room.ids, user_data))
+        p.daemon = True
+        p.start()
     else:
         response = make_response(json.dumps({'server':'{} is not in a chat room'.format(user_id), 'code':'error'}), 200)
     logout_user()
