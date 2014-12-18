@@ -328,7 +328,8 @@ class ChatRoom:
 
     def update_user(self, user_id, user_data):
         if ( user_id in self.members.keys() ):
-            self.members[user_id]["location"] = user_data.get("location", self.members[user_id]["location"])
+            if ( "location" in user_data ):
+                self.members[user_id]["location"] = user_data["location"]
 	    self.members[user_id]["nickname"] = user_data.get("nickname", None)
             self.members[user_id]["first_name"] = user_data.get("first_name", None)
             self.members[user_id]["full_name"] = user_data.get("full_name", None)
