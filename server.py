@@ -1161,17 +1161,18 @@ def upload_file():
     if ( _file and allowed_file(_file.filename) ):
         filename = secure_filename(_file.filename)
 
-#        if ( current_user.get_id() in filename ):
-        _file.save(os.path.join(server.config['UPLOADS_FOLDER'], filename))
-        response = make_response(json.dumps({'server':filename + ' uploaded!', 'code':'ok'}), 200)
-#        else:
-#            response = make_response(json.dumps({'server':'you don\'t have permission to upload this file!', 'code':'error'}), 200)
+        if ( current_user.get_id() in filename ):
+            _file.save(os.path.join(server.config['UPLOADS_FOLDER'], filename))
+            response = make_response(json.dumps({'server':filename + ' uploaded!', 'code':'ok'}), 200)
+        else:
+            response = make_response(json.dumps({'server':'you don\'t have permission to upload this file!', 'code':'error'}), 200)
     else:
         response = make_response(json.dumps({'server':filename + ' could not be uploaded!', 'code':'error'}), 200)
     response.headers["Content-Type"] = "application/json"
     return response
 
 @server.route('/upload/<filename>', methods=['GET', 'HEAD'])
+@login_required
 def serve_uploaded_file(filename):
     return send_from_directory(server.config['UPLOADS_FOLDER'], filename)
 
