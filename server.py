@@ -17,7 +17,7 @@ server = Flask(__name__)
 server.secret_key = os.environ.get("SECRET_KEY", os.urandom(24))
 server.config['SQLALCHEMY_DATABASE_URI'] = os.environ.get(
     'DATABASE_URL', 'postgresql:///local_database')
-server.config['UPLOADS_FOLDER'] = '.'
+server.config['UPLOADS_FOLDER'] = 'uploads'
 
 login_manager = LoginManager(server)
 database = SQLAlchemy(server)
@@ -1153,12 +1153,12 @@ def shutdown():
 def allowed_file(filename):
     return '.' in filename and filename.rsplit('.', 1)[1] in ['png', 'jpg', 'jpeg']
 
-@server.route('/upload/<filename>', methods=['POST'])
-def upload_file(filename):
+@server.route('/upload', methods=['POST'])
+def upload_file():
 
-    _file = request.files[filename]
-    if ( _file and allowed_file(filename) ):
-        filename = secure_filename(filename)
+    _file = request.files['filename']
+    if ( _file and allowed_file(_file.filename) ):
+        filename = secure_filename(_file.filename)
         _file.save(os.path.join(server.config['UPLOADS_FOLDER'], filename))
         response = make_response(json.dumps({'server':filename + ' uploaded!', 'code':'ok'}), 200)
     else:
