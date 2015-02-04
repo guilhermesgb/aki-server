@@ -1157,9 +1157,6 @@ def allowed_file(filename):
 @login_required
 def upload_file():
 
-    #TODO: make this endpoint @login_required
-    #check if filename contains current_user_id, if not, dont allow upload
-
     _file = request.files['filename']
     if ( _file and allowed_file(_file.filename) ):
         filename = secure_filename(_file.filename)
