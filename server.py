@@ -1068,25 +1068,35 @@ def get_mutual():
     ).all()
     for mutual in mutuals:
         user = User.get_stored(mutual.uid2)
-        results.append({
-            'uid': user.uid,
-            'nickname': user.nickname,
-            'gender': user.gender,
-            'first_name': user.first_name,
-            'full_name': user.full_name
-        })
+        if ( user ):
+            results.append({
+                'uid': user.uid,
+                'nickname': user.nickname,
+                'gender': user.gender,
+                'first_name': user.first_name,
+                'full_name': user.full_name
+            })
+        else:
+            results.append({
+                'uid': mutual.uid2
+            })
     mutuals = MutualInterest.query.filter(
         MutualInterest.uid2 == current_id
     ).all()
     for mutual in mutuals:
         user = User.get_stored(mutual.uid1)
-        results.append({
-            'uid': user.uid,
-            'nickname': user.nickname,
-            'gender': user.gender,
-            'first_name': user.first_name,
-            'full_name': user.full_name
-        })
+        if ( user ):
+            results.append({
+                'uid': user.uid,
+                'nickname': user.nickname,
+                'gender': user.gender,
+                'first_name': user.first_name,
+                'full_name': user.full_name
+            })
+        else:
+            results.append({
+                'uid': mutual.uid1
+            })
 
     response = make_response(json.dumps({
         'server':'retrieved {}\'s mutual interests'.format(current_id),
