@@ -1172,7 +1172,6 @@ def upload_file():
     return response
 
 @server.route('/upload/<filename>', methods=['GET', 'HEAD'])
-@login_required
 def serve_uploaded_file(filename):
     return send_from_directory(server.config['UPLOADS_FOLDER'], filename)
 
