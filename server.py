@@ -41,10 +41,19 @@ class StoredUser(database.Model):
     __tablename__ = 'person'
     id = database.Column(database.Integer, primary_key=True)
     uid = database.Column(database.String(20), unique=True)
+    nickname = database.Column(database.String(20))
+    gender = database.Column(database.String(20))
+    first_name = database.Column(database.String(20))
+    full_name = database.Column(database.String(20))
     active = database.Column(database.Boolean)
 
-    def __init__(self, user_id, active=False):
+    def __init__(self, user_id, nickname, gender, \
+      first_name, full_name, active=False):
         self.uid = user_id
+        self.nickname = nickname
+        self.gender = gender
+        self.first_name = first_name
+        self.full_name = full_name
         self.active = active
 
     def __repr__(self):
@@ -55,8 +64,8 @@ class User(UserMixin):
     MAX_INACTIVE_TIME = 10 * 60 #10 minutes
     users = {}
 
-    def __init__(self, user_id, active=True):
-
+    def __init__(self, user_id, nickname, gender, \
+      first_name, full_name, active=True):
         self.uid = user_id
         self.active = active
         self.skipped_chats = []
@@ -68,12 +77,14 @@ class User(UserMixin):
         try:
             StoredUser.query.filter(StoredUser.uid == user_id).one()
         except NoResultFound:
-            database.session.add(StoredUser(user_id))
+            database.session.add(StoredUser(user_id, nickname, gender, \
+                first_name, full_name))
             database.session.commit()
         except MultipleResultsFound:
             for user in StoredUser.query.all():
                 database.session.remove(user)
-            database.session.add(StoredUser(user_id))
+            database.session.add(StoredUser(user_id, nickname, gender, \
+                first_name, full_name))
             database.session.commit()
 
         if ( not user_id in User.users ):
@@ -598,6 +609,10 @@ def send_presence(user_id):
             response = make_response(json.dumps({'server':'presence fail (you are someone else)', 'code':'error'}), 200)
         else:
             u = User.get_stored(user_id)
+            u.nickname = nickname
+            u.gender = gender
+            u.first_name = first_name
+            u.full_name = full_name
             u.active = True
             database.session.add(u)
             database.session.commit()
@@ -624,7 +639,7 @@ def send_presence(user_id):
             response = make_response(json.dumps(response), 200)
     else:
 
-        User(user_id)
+        User(user_id, nickname, gender, first_name, full_name)
         u = User.get_stored(user_id)
         if ( login_user(User.get(user_id), remember=True) ):
             u.active = True
@@ -1052,15 +1067,25 @@ def get_mutual():
         MutualInterest.uid1 == current_id
     ).all()
     for mutual in mutuals:
+        user = User.get_stored(mutual.uid2)
         results.append({
-            'uid': mutual.uid2
+            'uid': user.uid,
+            'nickname': user.nickname,
+            'gender': user.gender,
+            'first_name': user.first_name,
+            'full_name': user.full_name
         })
     mutuals = MutualInterest.query.filter(
         MutualInterest.uid2 == current_id
     ).all()
     for mutual in mutuals:
+        user = User.get_stored(mutual.uid1)
         results.append({
-            'uid': mutual.uid1
+            'uid': user.uid,
+            'nickname': user.nickname,
+            'gender': user.gender,
+            'first_name': user.first_name,
+            'full_name': user.full_name
         })
 
     response = make_response(json.dumps({
@@ -1102,6 +1127,32 @@ def delete_mutual(user_id=None):
     }), 200)
     response.headers["Content-Type"] = "application/json"
     return response
+
+def allowed_file(filename):
+    return '.' in filename and filename.rsplit('.', 1)[1] in ['png', 'jpg', 'jpeg']
+
+@server.route('/upload', methods=['POST'])
+#@login_required
+def upload_file():
+
+    _file = request.files['filename']
+    if ( _file and allowed_file(_file.filename) ):
+        filename = secure_filename(_file.filename)
+
+        if ( current_user.get_id() in filename ):
+            _file.save(os.path.join(server.config['UPLOADS_FOLDER'], filename))
+            response = make_response(json.dumps({'server':filename + ' uploaded!', 'code':'ok'}), 200)
+        else:
+            response = make_response(json.dumps({'server':'you don\'t have permission to upload this file!', 'code':'error'}), 200)
+    else:
+        response = make_response(json.dumps({'server':filename + ' could not be uploaded!', 'code':'error'}), 200)
+    response.headers["Content-Type"] = "application/json"
+    return response
+
+@server.route('/upload/<filename>', methods=['GET', 'HEAD'])
+@login_required
+def serve_uploaded_file(filename):
+    return send_from_directory(server.config['UPLOADS_FOLDER'], filename)
 
 @server.route('/shutdown', methods=['POST'])
 def shutdown():
@@ -1149,32 +1200,6 @@ def shutdown():
     response = make_response(json.dumps({'server':'shutting down...', 'code':'ok'}), 200)
     response.headers["Content-Type"] = "application/json"
     return response
-
-def allowed_file(filename):
-    return '.' in filename and filename.rsplit('.', 1)[1] in ['png', 'jpg', 'jpeg']
-
-@server.route('/upload', methods=['POST'])
-#@login_required
-def upload_file():
-
-    _file = request.files['filename']
-    if ( _file and allowed_file(_file.filename) ):
-        filename = secure_filename(_file.filename)
-
-        if ( current_user.get_id() in filename ):
-            _file.save(os.path.join(server.config['UPLOADS_FOLDER'], filename))
-            response = make_response(json.dumps({'server':filename + ' uploaded!', 'code':'ok'}), 200)
-        else:
-            response = make_response(json.dumps({'server':'you don\'t have permission to upload this file!', 'code':'error'}), 200)
-    else:
-        response = make_response(json.dumps({'server':filename + ' could not be uploaded!', 'code':'error'}), 200)
-    response.headers["Content-Type"] = "application/json"
-    return response
-
-@server.route('/upload/<filename>', methods=['GET', 'HEAD'])
-@login_required
-def serve_uploaded_file(filename):
-    return send_from_directory(server.config['UPLOADS_FOLDER'], filename)
 
 
 if __name__ == "__main__":
