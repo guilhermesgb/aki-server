@@ -1,8 +1,9 @@
-from flask import Flask, make_response, request
+from flask import Flask, make_response, request, send_from_directory
 from flask.ext.login import LoginManager, login_user, logout_user,\
 login_required, current_user, UserMixin
 from flask.ext.sqlalchemy import SQLAlchemy, Session
 from sqlalchemy.orm.exc import NoResultFound, MultipleResultsFound
+from werkzeug import secure_filename
 
 from request_utils import send_request
 
@@ -16,6 +17,7 @@ server = Flask(__name__)
 server.secret_key = os.environ.get("SECRET_KEY", os.urandom(24))
 server.config['SQLALCHEMY_DATABASE_URI'] = os.environ.get(
     'DATABASE_URL', 'postgresql:///local_database')
+server.config['UPLOADS_FOLDER'] = '.'
 
 login_manager = LoginManager(server)
 database = SQLAlchemy(server)
@@ -1148,6 +1150,27 @@ def shutdown():
     response.headers["Content-Type"] = "application/json"
     return response
 
+def allowed_file(filename):
+    return '.' in filename and filename.rsplit('.', 1)[1] in ['png', 'jpg', 'jpeg']
+
+@server.route('/upload/<filename>', methods=['POST'])
+def upload_file(filename):
+
+    _file = request.files[filename]
+    if ( _file and allowed_file(filename) ):
+        filename = secure_filename(filename)
+        _file.save(os.path.join(server.config['UPLOADS_FOLDER'], filename))
+        response = make_response(json.dumps({'server':filename + ' uploaded!', 'code':'ok'}), 200)
+    else:
+        response = make_response(json.dumps({'server':filename + ' could not be uploaded!', 'code':'error'}), 200)
+    response.headers["Content-Type"] = "application/json"
+    return response
+
+@server.route('/upload/<filename>', methods=['GET'])
+def serve_uploaded_file(filename):
+    return send_from_directory(server.config['UPLOADS_FOLDER'], filename)
+
+
 if __name__ == "__main__":
 
     port = int(os.environ.get("PORT", 5000))
@@ -1157,4 +1180,4 @@ if __name__ == "__main__":
         user.active = False
         database.session.add(user)
     database.session.commit()
-    server.run(host="0.0.0.0", port=port)
+    server.run(host="0.0.0.0", port=port, debug=True)
