@@ -26,8 +26,8 @@ class MutualInterest(database.Model):
 
     __tablename__ = 'mutual'
     id = database.Column(database.Integer, primary_key=True)
-    uid1 = database.Column(database.String(20))
-    uid2 = database.Column(database.String(20))
+    uid1 = database.Column(database.String(50))
+    uid2 = database.Column(database.String(50))
 
     def __init__(self, uid1, uid2):
         self.uid1 = uid1
@@ -41,10 +41,10 @@ class StoredUser(database.Model):
     __tablename__ = 'person'
     id = database.Column(database.Integer, primary_key=True)
     uid = database.Column(database.String(20), unique=True)
-    nickname = database.Column(database.String(20))
-    gender = database.Column(database.String(20))
-    first_name = database.Column(database.String(20))
-    full_name = database.Column(database.String(20))
+    nickname = database.Column(database.String(50))
+    gender = database.Column(database.String(50))
+    first_name = database.Column(database.String(50))
+    full_name = database.Column(database.String(50))
     active = database.Column(database.Boolean)
 
     def __init__(self, user_id, nickname, gender, \
