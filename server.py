@@ -67,7 +67,7 @@ class User(UserMixin):
     def __init__(self, user_id, nickname, gender, \
       first_name, full_name, anonymous, active=True):
         self.uid = user_id
-        self.anonymous = anonymous
+        self.anonymous_setting = anonymous
         self.active = active
         self.skipped_chats = []
         self.compromised_chats = []
@@ -106,16 +106,27 @@ class User(UserMixin):
         return unicode(self.uid)
 
     def is_currently_anonymous(self):
-        return self.anonymous
+        return self.anonymous_setting
 
     def set_anonymous(self, anonymous):
-        self.anonymous = anonymous
+        self.anonymous_setting = anonymous
 
     def terminate(self):
+        u = User.get_stored(self.uid)
+        u.active = False
+        database.session.add(u)
+        database.session.commit()
+
+        u_ = User.get(user_id)
+        u_.liked_users = []
 
         chat_id = ChatRoom.at_chat(self.uid)
         if ( chat_id ):
-            ChatRoom.get_chat(chat_id).remove_user(self.uid)
+            chat_room = ChatRoom.get_chat(chat_id)
+            if ( chat_room ):
+                if ( not self.is_currently_anonymous() ):
+                    self.compromised_chats.extend(chat_room.ids)
+                chat_room.remove_user(self.uid)
 
     def set_terminate_timer(self):
 
@@ -486,7 +497,9 @@ def index():
         users.append({
             'user_id' : u.uid,
             'status' : 'active' if u.active else 'inactive',
-            'liked': u_.liked_users
+            'liked': u_.liked_users,
+            'skipped': u_.skipped_chats,
+            'compromised': u_.compromised_chats
         })
 
     chats = []
@@ -732,15 +745,14 @@ def send_skip():
 
     u_ = User.get(user_id)
     u_.liked_users = []
-
     chat_id = ChatRoom.at_chat(user_id)
     if ( chat_id ):
         chat_room = ChatRoom.get_chat(chat_id)
-        user = User.get(user_id)
-        user.skipped_chats.extend(chat_room.ids)
-        if ( not user.is_currently_anonymous ):
-            user.compromised_chats.extend(chat_room.ids)
-        chat_room.remove_user(user_id)
+        if ( chat_room ):
+            u_.skipped_chats.extend(chat_room.ids)
+            if ( not u_.is_currently_anonymous() ):
+                u_.compromised_chats.extend(chat_room.ids)
+            chat_room.remove_user(user_id)
 
         user_data = {
             "from": user_id,
@@ -777,7 +789,10 @@ def send_exit():
     chat_id = ChatRoom.at_chat(user_id)
     if ( chat_id ):
         chat_room = ChatRoom.get_chat(chat_id)
-        chat_room.remove_user(user_id)
+        if ( chat_room ):
+            if ( not u_.is_currently_anonymous() ):
+                u_.compromised_chats.extend(chat_room.ids)
+            chat_room.remove_user(user_id)
 
         user_data = {
             "from": user_id,
