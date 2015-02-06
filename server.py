@@ -126,6 +126,7 @@ class User(UserMixin):
             if ( chat_room ):
                 if ( not self.is_currently_anonymous() ):
                     self.compromised_chats.extend(chat_room.ids)
+                    self.compromised_chats = list(set(self.compromised_chats))
                 chat_room.remove_user(self.uid)
 
     def set_terminate_timer(self):
@@ -752,6 +753,7 @@ def send_skip():
             u_.skipped_chats.extend(chat_room.ids)
             if ( not u_.is_currently_anonymous() ):
                 u_.compromised_chats.extend(chat_room.ids)
+                u_.compromised_chats = list(set(u_.compromised_chats))
             chat_room.remove_user(user_id)
 
         user_data = {
@@ -790,8 +792,10 @@ def send_exit():
     if ( chat_id ):
         chat_room = ChatRoom.get_chat(chat_id)
         if ( chat_room ):
+            u_.skipped_chats.extend(chat_room.ids)
             if ( not u_.is_currently_anonymous() ):
                 u_.compromised_chats.extend(chat_room.ids)
+                u_.compromised_chats = list(set(u_.compromised_chats))
             chat_room.remove_user(user_id)
 
         user_data = {
