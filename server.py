@@ -22,6 +22,20 @@ server.config['UPLOADS_FOLDER'] = 'uploads'
 login_manager = LoginManager(server)
 database = SQLAlchemy(server)
 
+class UploadedImage(database.Model):
+
+    __tablename__ = "uploaded_image"
+    id = database.Column(database.Integer, primary_key=True)
+    name = database.Column(database.String(50))
+    blob = database.Column(database.LargeBinary())
+
+    def __init__(self, name, blob):
+        self.name = name
+        self.blob = blob
+
+    def __repr__(self):
+        return "UploadedImage {}".format(self.name)
+
 class MutualInterest(database.Model):
 
     __tablename__ = 'mutual'
@@ -1201,6 +1215,10 @@ def upload_file():
 
         if ( current_user.get_id() in filename ):
             _file.save(os.path.join(server.config['UPLOADS_FOLDER'], filename))
+            #TODO store image in database
+            _stored = UploadedFile(filename, _file.read())
+            database.session.add(_stored)
+            database.session.commit()
             response = make_response(json.dumps({'server':filename + ' uploaded!', 'code':'ok'}), 200)
         else:
             response = make_response(json.dumps({'server':'you don\'t have permission to upload this file!', 'code':'error'}), 200)
@@ -1271,4 +1289,11 @@ if __name__ == "__main__":
         user.active = False
         database.session.add(user)
     database.session.commit()
+
+    #TODO query for all uploaded images, then restore them from the database back into the uploads folder
+    for upload in UploadedImage.query.all():
+        _file = open(os.path.join(server.config['UPLOADS_FOLDER'], upload.name), 'w')
+        _file.write(upload.blob)
+        _file.close()
+
     server.run(host="0.0.0.0", port=port, debug=True)
