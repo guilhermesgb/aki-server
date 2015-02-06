@@ -65,10 +65,12 @@ class User(UserMixin):
     users = {}
 
     def __init__(self, user_id, nickname, gender, \
-      first_name, full_name, active=True):
+      first_name, full_name, anonymous, active=True):
         self.uid = user_id
+        self.anonymous = anonymous
         self.active = active
         self.skipped_chats = []
+        self.compromised_chats = []
         self.terminate_timer = None
         self.liked_users = []
         self.lock = Lock()
@@ -96,11 +98,18 @@ class User(UserMixin):
     def is_active(self):
         return True
 
+    #This method is necessary for the UserMixin
     def is_anonymous(self):
         return False
 
     def get_id(self):
         return unicode(self.uid)
+
+    def is_currently_anonymous(self):
+        return self.anonymous
+
+    def set_anonymous(self, anonymous):
+        self.anonymous = anonymous
 
     def terminate(self):
 
@@ -618,9 +627,16 @@ def send_presence(user_id):
             database.session.add(u)
             database.session.commit()
             u_ = User.get(user_id)
+            u_.set_anonymous(anonymous)
             u_.cancel_terminate_timer()
             logging.info("Presence sent ok")
             chat_id, chat_ids = ChatRoom.assign_chat(user_id, location)
+            should_not_be_anonymous = False
+            for cid in chat_ids:
+                if ( cid in u_.compromised_chats ):
+                    user_data['anonymous'] = False
+                    should_not_be_anonymous = True
+                    break
             chat_room = ChatRoom.get_chat(chat_id)
             if ( chat_room ):
                 chat_room.update_user(user_id, user_data)
@@ -637,19 +653,28 @@ def send_presence(user_id):
             }
             if ( u_.flag_mutual_interest ):
                 response["update_mutual_interests"] = True
+            if ( should_not_be_anonymous ):
+                response["should_not_be_anonymous"] = True
             response = make_response(json.dumps(response), 200)
     else:
 
-        User(user_id, nickname, gender, first_name, full_name)
+        User(user_id, nickname, gender, first_name, full_name, anonymous)
         u = User.get_stored(user_id)
         if ( login_user(User.get(user_id), remember=True) ):
             u.active = True
             database.session.add(u)
             database.session.commit()
             u_ = User.get(user_id)
+            u_.set_anonymous(anonymous)
             u_.cancel_terminate_timer()
             logging.info("Presence sent ok (by logging)")
             chat_id, chat_ids = ChatRoom.assign_chat(user_id, location)
+            should_not_be_anonymous = False
+            for cid in chat_ids:
+                if ( cid in u_.compromised_chats ):
+                    user_data['anonymous'] = False
+                    should_not_be_anonymous = True
+                    break
             chat_room = ChatRoom.get_chat(chat_id)
             if ( chat_room ):
                 chat_room.update_user(user_id, user_data)
@@ -667,6 +692,8 @@ def send_presence(user_id):
             }
             if ( u_.flag_mutual_interest ):
                 response["update_mutual_interests"] = True
+            if ( should_not_be_anonymous ):
+                response["should_not_be_anonymous"] = True
             response = make_response(json.dumps(response), 200)
         else:
             logging.info("Presence sent not ok (login failed)")
@@ -709,7 +736,10 @@ def send_skip():
     chat_id = ChatRoom.at_chat(user_id)
     if ( chat_id ):
         chat_room = ChatRoom.get_chat(chat_id)
-        User.get(user_id).skipped_chats.extend(chat_room.ids)
+        user = User.get(user_id)
+        user.skipped_chats.extend(chat_room.ids)
+        if ( not user.is_currently_anonymous ):
+            user.compromised_chats.extend(chat_room.ids)
         chat_room.remove_user(user_id)
 
         user_data = {
