@@ -1222,7 +1222,7 @@ def upload_file():
         if ( current_user.get_id() in filename ):
             _file.save(os.path.join(server.config['UPLOADS_FOLDER'], filename))
             #TODO store image in database
-            _stored = UploadedFile(filename, _file.read())
+            _stored = UploadedImage(filename, _file.read())
             database.session.add(_stored)
             database.session.commit()
             response = make_response(json.dumps({'server':filename + ' uploaded!', 'code':'ok'}), 200)
