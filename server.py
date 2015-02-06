@@ -605,10 +605,14 @@ def send_presence(user_id):
 
     first_name = data.get('first_name', None)
     if ( first_name != None ):
+        if ( len(first_name) > 50 ):
+            first_name = first_name[:50]
         user_data["first_name"] = first_name
 
     full_name = data.get('full_name', None)
     if ( full_name != None ):
+        if ( len(full_name) > 50 ):
+            full_name = full_name[:50]
         user_data["full_name"] = full_name
 
     gender = data.get('gender', None)
@@ -617,6 +621,8 @@ def send_presence(user_id):
 
     nickname = data.get('nickname', None)
     if ( nickname != None ):
+        if ( len(nickname) > 50 ):
+            nickname = nickname[:50]
         user_data["nickname"] = nickname
 
     anonymous = data.get('anonymous', None)
