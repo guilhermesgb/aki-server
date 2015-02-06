@@ -189,10 +189,11 @@ class User(UserMixin):
 
     @staticmethod
     def get_stored(uid):
-        u = User.users.get(uid, None)
-        if ( u != None ):
-            return u.do_get_stored()
-        return None
+#        u = User.users.get(uid, None)
+#        if ( u != None ):
+#            return u.do_get_stored()
+#        return None
+        return StoredUser.query.filter(StoredUser.uid == uid).first()
 
 def do_update_center_and_radius(chat_ids, center, radius):
 
