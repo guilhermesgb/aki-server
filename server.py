@@ -22,33 +22,6 @@ server.config['UPLOADS_FOLDER'] = 'uploads'
 login_manager = LoginManager(server)
 database = SQLAlchemy(server)
 
-class UploadedImage(database.Model):
-
-    __tablename__ = "uploaded_image"
-    id = database.Column(database.Integer, primary_key=True)
-    name = database.Column(database.String(50))
-    blob = database.Column(database.LargeBinary())
-
-    def __init__(self, name, blob):
-        self.name = name
-        self.blob = blob
-
-    def __repr__(self):
-        return "UploadedImage {}".format(self.name)
-
-class MutualInterest(database.Model):
-
-    __tablename__ = 'mutual'
-    id = database.Column(database.Integer, primary_key=True)
-    uid1 = database.Column(database.String(50))
-    uid2 = database.Column(database.String(50))
-
-    def __init__(self, uid1, uid2):
-        self.uid1 = uid1
-        self.uid2 = uid2
-
-    def __repr__(self):
-        return "<Mutual {} & {}>".format(self.uid1, self.uid2)
 
 class StoredUser(database.Model):
 
@@ -356,6 +329,8 @@ class ChatRoom:
 
         self.radius = radius
 
+#TODO make this useful, currently not sending it because Android client
+# makes no real use of this information
 #        p = Process(target=do_update_center_and_radius,
 #            args=(self.ids, center, radius))
 #        p.daemon = True
@@ -486,6 +461,88 @@ class ChatRoom:
                 chat_room = ChatRoom(location, user_id)
                 u.skipped_chats = []
                 return chat_room.ids[0], chat_room.ids
+
+class PrivateMessage(database.Model):
+
+    __tablename__ = "private_message"
+    id = database.Column(database.Integer, primary_key=True)
+    cid = database.Column(database.String(50))
+    timestamp = database.Column(database.String(50))
+    sender_id = database.Column(database.String(50))
+    message = database.Column(database.String(50))
+
+    def __init__(self, cid, timestamp, sender_id, message):
+        self.cid = cid
+        self.timestamp = timestamp
+        self.sender_id = sender_id
+        self.message = message
+
+    def __repr__(self):
+        return "PrivateMessage from {}".format(self.sender_id)
+
+class PrivateChatRoom:
+
+    chats = {}
+
+    def __init__(self, uid1, uid2):
+        if ( uid1 < uid2 ): 
+            self.cid  = "chat-" + uid1 + uid2
+        else:
+            self.cid  = "chat-" + uid2 + uid1
+        self.messages = []
+        for pmsg in PrivateMessage.query.filter(
+          PrivateMessage.cid == self.cid).all():
+            self.add_message(pmsg.sender_id, pmsg.message, \
+              int(pmsg.timestamp), False)
+        PrivateChatRoom.chats[self.cid] = self
+
+    def add_message(self, sender_id, message, timestamp, persist_now=False):
+        heapq.heappush(self.messages, (timestamp, {
+            "sender": sender_id,
+            "message": message
+        }))
+        if ( persist_now ):
+            timestamp = str(int(timestamp)).replace("L", "")
+            pmsg = PrivateMessage(self.cid, timestamp, sender_id, message)
+            database.session.add(pmsg)
+            database.session.commit()
+        return timestamp
+
+    @staticmethod
+    def get_chat(uid1, uid2):
+        if ( uid1 < uid2 ): 
+            chat_id  = "chat-" + uid1 + uid2
+        else:
+            chat_id  = "chat-" + uid2 + uid1
+        return PrivateChatRoom.chats.get(chat_id, PrivateChatRoom(uid1, uid2))
+
+class MutualInterest(database.Model):
+
+    __tablename__ = 'mutual'
+    id = database.Column(database.Integer, primary_key=True)
+    uid1 = database.Column(database.String(50))
+    uid2 = database.Column(database.String(50))
+
+    def __init__(self, uid1, uid2):
+        self.uid1 = uid1
+        self.uid2 = uid2
+
+    def __repr__(self):
+        return "<Mutual {} & {}>".format(self.uid1, self.uid2)
+
+class UploadedImage(database.Model):
+
+    __tablename__ = "uploaded_image"
+    id = database.Column(database.Integer, primary_key=True)
+    name = database.Column(database.String(50))
+    blob = database.Column(database.LargeBinary())
+
+    def __init__(self, name, blob):
+        self.name = name
+        self.blob = blob
+
+    def __repr__(self):
+        return "UploadedImage {}".format(self.name)
 
 
 @login_manager.user_loader
@@ -982,6 +1039,8 @@ def send_message():
         response.headers["Content-Type"] = "application/json"
         return response
 
+    message = message[:50]
+
     current_chat_id = ChatRoom.at_chat(current_user.get_id())
     if ( current_chat_id ):
         chat_room = ChatRoom.get_chat(current_chat_id)
@@ -1195,6 +1254,14 @@ def delete_mutual(user_id=None):
     for mutual in mutuals:
         database.session.delete(mutual)
 
+    if ( current_id < user_id ):
+        cid = "chat-id" + current_id + user_id
+    else:
+        cid = "chat-id" + user_id + current_id
+    for pmsg in PrivateMessage.query.filter(
+      PrivateMessage.cid == cid).all():
+        database.session.delete(pmsg)
+
     database.session.commit()
 
     u = User.get(user_id)
@@ -1205,6 +1272,128 @@ def delete_mutual(user_id=None):
         'server':'mutual interest between {} and {} removed'.format(current_id, user_id),
         'code':'ok'
     }), 200)
+    response.headers["Content-Type"] = "application/json"
+    return response
+
+def warn_about_private_message(sender_id, chat_id):
+
+    headers = {
+        "X-Parse-Application-Id": os.environ.get("PARSE_APPLICATION_ID", None),
+        "X-Parse-REST-API-Key": os.environ.get("PARSE_REST_API_KEY", None),
+        "Content-Type":"application/json"
+    }
+
+    data = {
+        "from": sender_id,
+        "action": "com.lespi.aki.receivers.INCOMING_PRIVATE_MESSAGE",
+    }
+
+    payload = {
+        "where": {
+            "channels": {
+                "$in": [ chat_id ]
+            }
+        },
+        "data" : data
+    }
+
+    response = send_request('POST', "https://api.parse.com/1/push",
+         payload=payload, headers=headers) 
+
+    if ( response["success"] ):
+        logging.info("Message sent to Parse push notifications system")
+    else:
+        logging.info("Cannot send message to Parse push notifications system")
+
+
+@server.route('/private_message/<user_id>', methods=['POST'])
+@login_required
+def send_private_message(user_id=None):
+
+    try:
+        data = request.json
+        if ( data == None ):
+            response = make_response(json.dumps({'server':'payload must be valid json', 'code':'error'}), 200)
+            response.headers["Content-Type"] = "application/json"
+            return response
+        data = dict(data)
+        if ( data == None ):
+            response = make_response(json.dumps({'server':'payload must be valid json', 'code':'error'}), 200)
+            response.headers["Content-Type"] = "application/json"
+            return response
+    except:
+        response = make_response(json.dumps({'server':'payload must be valid json', 'code':'error'}), 200)
+        response.headers["Content-Type"] = "application/json"
+        return response
+
+    message = data.get('message', None)
+
+    if ( message == None ):
+        response = make_response(json.dumps({'server':'message field cannot be ommitted!', 'code':'error'}), 200)
+        response.headers["Content-Type"] = "application/json"
+        return response
+
+    message = message[:50]
+
+    current_id = current_user.get_id()
+    #TODO only allow this if current_user_id has mutual interest with user_id
+
+    private_chat_room = PrivateChatRoom.get_chat(current_id, user_id)
+    private_chat_room.add_message(current_id, message, \
+      (time.time() * 1000000), True)
+
+    p = Process(target=warn_about_private_message,
+      args=(current_user.get_id(), private_chat_room.cid))
+    p.daemon = True
+    p.start()
+
+    response = make_response(json.dumps({'server':'message sent', 'code':'ok'}), 200)
+    response.headers["Content-Type"] = "application/json"
+    return response
+
+@server.route('/private_message/<user_id>/<int:amount>', methods=['GET'])
+@server.route('/private_message/<user_id>', methods=['GET'])
+@login_required
+def get_private_messages(user_id=None, amount=10):
+
+    current_id = current_user.get_id()
+    #TODO only allow this if current_user_id has mutual interest with user_id
+
+    private_chat_room = PrivateChatRoom.get_chat(current_id, user_id)
+    source = private_chat_room.messages
+
+    after = request.args.get("next", None)
+    if ( after ):
+        try:
+            after = int(after)
+        except ValueError:
+            response = make_response(json.dumps({'server':"\'next\' argument requires a number, cannot be {}".format(after), 'code':'error'}), 200)
+            response.headers["Content-Type"] = "application/json"
+            return response
+
+        messages = get_msgs_after_tstamp(amount, source, after)
+    else:
+        messages = heapq.nsmallest(amount, source)
+
+    next = None if ( len(messages) == 0 ) else messages[-1][0]
+    remaining = len(get_msgs_after_tstamp(1, source, next)) if next else 0
+    finished = remaining == 0
+
+    messages = [ {
+        "sender": x[1]["sender"],
+        "message": x[1]["message"],
+        "timestamp": str(int(x[0])).replace("L", "")
+    } for x in messages ]
+
+    response = {
+        'server': '{} retrieved {} messages from chat {}'.format(current_id,
+            len(messages), private_chat_room.cid),
+        'code': 'ok',
+        'messages': messages,
+        'next': str(int(next)).replace("L", "") if next else None,
+        'finished': finished
+    }
+    response = make_response(json.dumps(response), 200)
     response.headers["Content-Type"] = "application/json"
     return response
 
