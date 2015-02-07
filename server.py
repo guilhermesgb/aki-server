@@ -1212,7 +1212,7 @@ def allowed_file(filename):
     return '.' in filename and filename.rsplit('.', 1)[1] in ['png', 'jpg', 'jpeg']
 
 @server.route('/upload', methods=['POST'])
-#@login_required
+@login_required
 def upload_file():
 
     _file = request.files['filename']
@@ -1220,9 +1220,11 @@ def upload_file():
         filename = secure_filename(_file.filename)
 
         if ( current_user.get_id() in filename ):
-            _file.save(os.path.join(server.config['UPLOADS_FOLDER'], filename))
-            #TODO store image in database
+            path = os.path.join(server.config['UPLOADS_FOLDER'], filename)
+            _file.save(path)
+            _file = open(path, 'r')
             _stored = UploadedImage(filename, _file.read())
+            _file.close()
             database.session.add(_stored)
             database.session.commit()
             response = make_response(json.dumps({'server':filename + ' uploaded!', 'code':'ok'}), 200)
@@ -1296,10 +1298,9 @@ if __name__ == "__main__":
         database.session.add(user)
     database.session.commit()
 
-    #TODO query for all uploaded images, then restore them from the database back into the uploads folder
     for upload in UploadedImage.query.all():
         _file = open(os.path.join(server.config['UPLOADS_FOLDER'], upload.name), 'w')
         _file.write(upload.blob)
         _file.close()
 
-    server.run(host="0.0.0.0", port=port, debug=True)
+    server.run(host="0.0.0.0", port=port)
