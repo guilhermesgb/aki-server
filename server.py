@@ -1408,7 +1408,7 @@ def get_private_messages(user_id=None, amount=10):
         'finished': finished
     }
 
-    anoymous = {}
+    anonymous = {}
     for uid in private_chat_room.is_anonymous:
         if ( private_chat_room.is_anonymous[uid] != None ):
             anonymous[uid] = private_chat_room.is_anonymous[uid]
