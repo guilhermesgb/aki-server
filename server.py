@@ -489,6 +489,10 @@ class PrivateChatRoom:
             self.cid  = "chat-" + uid1 + uid2
         else:
             self.cid  = "chat-" + uid2 + uid1
+        self.is_anonymous = {
+             uid1 : None,
+             uid2 : None
+        }
         self.messages = []
         for pmsg in PrivateMessage.query.filter(
           PrivateMessage.cid == self.cid).all():
@@ -507,6 +511,9 @@ class PrivateChatRoom:
             database.session.add(pmsg)
             database.session.commit()
         return timestamp
+
+    def set_anonymous(self, sender_id, anonymous):
+        self.is_anonymous[sender_id] = anonymous
 
     @staticmethod
     def get_chat(uid1, uid2):
@@ -1275,7 +1282,7 @@ def delete_mutual(user_id=None):
     response.headers["Content-Type"] = "application/json"
     return response
 
-def warn_about_private_message(sender_id, chat_id):
+def warn_about_private_message(sender_id, chat_id, anonymous):
 
     headers = {
         "X-Parse-Application-Id": os.environ.get("PARSE_APPLICATION_ID", None),
@@ -1287,6 +1294,9 @@ def warn_about_private_message(sender_id, chat_id):
         "from": sender_id,
         "action": "com.lespi.aki.receivers.INCOMING_PRIVATE_MESSAGE",
     }
+
+    if ( anonymous != None ):
+        data["anonymous"] = anonymous
 
     payload = {
         "where": {
@@ -1342,8 +1352,12 @@ def send_private_message(user_id=None):
     private_chat_room.add_message(current_id, message, \
       (time.time() * 1000000), True)
 
+    anonymous = data.get('anonymous', None)
+    if ( anonymous != None ):
+        private_chat_room.set_anonymous(current_id, anonymous)
+
     p = Process(target=warn_about_private_message,
-      args=(current_user.get_id(), private_chat_room.cid))
+      args=(current_user.get_id(), private_chat_room.cid, anonymous))
     p.daemon = True
     p.start()
 
@@ -1393,6 +1407,13 @@ def get_private_messages(user_id=None, amount=10):
         'next': str(int(next)).replace("L", "") if next else None,
         'finished': finished
     }
+
+    anoymous = {}
+    for uid in private_chat_room.is_anonymous:
+        if ( private_chat_room.is_anonymous[uid] != None ):
+            anonymous[uid] = private_chat_room.is_anonymous[uid]
+    response['anonymous'] = anonymous
+
     response = make_response(json.dumps(response), 200)
     response.headers["Content-Type"] = "application/json"
     return response
