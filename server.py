@@ -1282,7 +1282,7 @@ def delete_mutual(user_id=None):
     response.headers["Content-Type"] = "application/json"
     return response
 
-def warn_about_private_message(sender_id, chat_id, anonymous):
+def warn_about_private_message(sender_id, chat_id, anonymous, action):
 
     headers = {
         "X-Parse-Application-Id": os.environ.get("PARSE_APPLICATION_ID", None),
@@ -1292,7 +1292,7 @@ def warn_about_private_message(sender_id, chat_id, anonymous):
 
     data = {
         "from": sender_id,
-        "action": "com.lespi.aki.receivers.INCOMING_PRIVATE_MESSAGE",
+        "action": action,
     }
 
     if ( anonymous != None ):
@@ -1315,7 +1315,6 @@ def warn_about_private_message(sender_id, chat_id, anonymous):
     else:
         logging.info("Cannot send message to Parse push notifications system")
 
-
 @server.route('/private_message/<user_id>', methods=['POST'])
 @login_required
 def send_private_message(user_id=None):
@@ -1336,28 +1335,26 @@ def send_private_message(user_id=None):
         response.headers["Content-Type"] = "application/json"
         return response
 
-    message = data.get('message', None)
-
-    if ( message == None ):
-        response = make_response(json.dumps({'server':'message field cannot be ommitted!', 'code':'error'}), 200)
-        response.headers["Content-Type"] = "application/json"
-        return response
-
-    message = message[:50]
-
     current_id = current_user.get_id()
     #TODO only allow this if current_user_id has mutual interest with user_id
 
     private_chat_room = PrivateChatRoom.get_chat(current_id, user_id)
-    private_chat_room.add_message(current_id, message, \
-      (time.time() * 1000000), True)
+
+    action = "com.lespi.aki.receivers.INCOMING_PRIVATE_MESSAGE"
+    message = data.get('message', None)
+    if ( message != None ):
+        message = message[:50]
+        private_chat_room.add_message(current_id, message, \
+          (time.time() * 1000000), True)
+    else:
+        action = "com.lespi.aki.receivers.INCOMING_MATCH_INFO_UPDATE"
 
     anonymous = data.get('anonymous', None)
     if ( anonymous != None ):
         private_chat_room.set_anonymous(current_id, anonymous)
 
     p = Process(target=warn_about_private_message,
-      args=(current_user.get_id(), private_chat_room.cid, anonymous))
+      args=(current_user.get_id(), private_chat_room.cid, anonymous, action))
     p.daemon = True
     p.start()
 
