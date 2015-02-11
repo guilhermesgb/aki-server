@@ -1203,36 +1203,41 @@ def get_mutual():
         MutualInterest.uid1 == current_id
     ).all()
     for mutual in mutuals:
+        result = {}
         user = User.get_stored(mutual.uid2)
         if ( user ):
-            results.append({
+            result = {
                 'uid': user.uid,
                 'nickname': user.nickname,
                 'gender': user.gender,
                 'first_name': user.first_name,
                 'full_name': user.full_name
-            })
+            }
         else:
-            results.append({
-                'uid': mutual.uid2
-            })
+            result['uid'] = mutual.uid2
+        private_chat_room = PrivateChatRoom.get_chat(current_id, mutual.uid2)
+        result['anonymous'] = private_chat_room.is_anonymous[mutual.uid2]
+        results.append(result)
+
     mutuals = MutualInterest.query.filter(
         MutualInterest.uid2 == current_id
     ).all()
     for mutual in mutuals:
+        result = {}
         user = User.get_stored(mutual.uid1)
         if ( user ):
-            results.append({
+            result = {
                 'uid': user.uid,
                 'nickname': user.nickname,
                 'gender': user.gender,
                 'first_name': user.first_name,
                 'full_name': user.full_name
-            })
+            }
         else:
-            results.append({
-                'uid': mutual.uid1
-            })
+            result['uid'] = mutual.uid1
+        private_chat_room = PrivateChatRoom.get_chat(current_id, mutual.uid1)
+        result['anonymous'] = private_chat_room.is_anonymous[mutual.uid1]
+        results.append(result)
 
     response = make_response(json.dumps({
         'server':'retrieved {}\'s mutual interests'.format(current_id),
