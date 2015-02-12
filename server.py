@@ -1364,6 +1364,8 @@ def send_private_message(user_id=None):
     anonymous = data.get('anonymous', None)
     if ( anonymous != None ):
         private_chat_room.set_anonymous(current_id, anonymous)
+    else: #TODO remove this later
+        private_chat_room.set_anonymous(current_id, "GOT HERE")
 
     p = Process(target=warn_about_private_message,
       args=(current_id, private_chat_room.cid, anonymous, action))
@@ -1417,7 +1419,7 @@ def get_private_messages(user_id=None, amount=10):
         'finished': finished
     }
 
-#    anonymous = {}
+#    anonymous = {} #TODO get this back
 #    for uid in private_chat_room.is_anonymous:
 #        if ( private_chat_room.is_anonymous[uid] != None ):
 #            anonymous[uid] = private_chat_room.is_anonymous[uid]
