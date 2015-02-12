@@ -1109,10 +1109,18 @@ def do_notify_mutual_interest(uid1, uid2):
         "Content-Type":"application/json"
     }
 
+    private_chat_room = PrivateChatRoom.get_chat(uid1, uid2)
+
     user_data = {
         "action" : "com.lespi.aki.receivers.INCOMING_MUTUAL_INTEREST_UPDATE",
-        "uid1": uid1,
-        "uid2": uid2
+        "uid1": {
+            "uid": uid1,
+            "anonymous": private_chat_room.is_anonymous[uid1]
+        },
+        "uid2": {
+            "uid": uid2,
+            "anonymous": private_chat_room.is_anonymous[uid2]
+        }
     }
 
     payload = {
