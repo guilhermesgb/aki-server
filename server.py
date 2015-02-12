@@ -104,8 +104,7 @@ class User(UserMixin):
         database.session.add(u)
         database.session.commit()
 
-        u_ = User.get(user_id)
-        u_.liked_users = []
+        self.liked_users = []
 
         chat_id = ChatRoom.at_chat(self.uid)
         if ( chat_id ):
