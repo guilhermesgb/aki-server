@@ -1366,7 +1366,7 @@ def send_private_message(user_id=None):
         private_chat_room.set_anonymous(current_id, anonymous)
 
     p = Process(target=warn_about_private_message,
-      args=(current_user.get_id(), private_chat_room.cid, anonymous, action))
+      args=(current_id, private_chat_room.cid, anonymous, action))
     p.daemon = True
     p.start()
 
@@ -1417,11 +1417,12 @@ def get_private_messages(user_id=None, amount=10):
         'finished': finished
     }
 
-    anonymous = {}
-    for uid in private_chat_room.is_anonymous:
-        if ( private_chat_room.is_anonymous[uid] != None ):
-            anonymous[uid] = private_chat_room.is_anonymous[uid]
-    response['anonymous'] = anonymous
+#    anonymous = {}
+#    for uid in private_chat_room.is_anonymous:
+#        if ( private_chat_room.is_anonymous[uid] != None ):
+#            anonymous[uid] = private_chat_room.is_anonymous[uid]
+#    response['anonymous'] = anonymous
+    response['anonymous'] = private_chat_room.is_anonymous
 
     response = make_response(json.dumps(response), 200)
     response.headers["Content-Type"] = "application/json"
