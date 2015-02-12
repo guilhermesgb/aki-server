@@ -485,9 +485,10 @@ class PrivateChatRoom:
 
     def __init__(self, uid1, uid2):
         if ( uid1 < uid2 ): 
-            self.cid  = "chat-" + uid1 + uid2
+            cid  = "chat-" + uid1 + uid2
         else:
-            self.cid  = "chat-" + uid2 + uid1
+            cid  = "chat-" + uid2 + uid1
+        self.cid = cid
         self.is_anonymous = {
              uid1 : None,
              uid2 : None
@@ -829,6 +830,7 @@ def send_skip():
 
     u_ = User.get(user_id)
     u_.liked_users = []
+
     chat_id = ChatRoom.at_chat(user_id)
     if ( chat_id ):
         chat_room = ChatRoom.get_chat(chat_id)
@@ -1364,8 +1366,6 @@ def send_private_message(user_id=None):
     anonymous = data.get('anonymous', None)
     if ( anonymous != None ):
         private_chat_room.set_anonymous(current_id, anonymous)
-    else: #TODO remove this later
-        private_chat_room.set_anonymous(current_id, "GOT HERE")
 
     p = Process(target=warn_about_private_message,
       args=(current_id, private_chat_room.cid, anonymous, action))
