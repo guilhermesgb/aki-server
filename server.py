@@ -468,7 +468,7 @@ class PrivateMessage(database.Model):
     cid = database.Column(database.String(50))
     timestamp = database.Column(database.String(50))
     sender_id = database.Column(database.String(50))
-    message = database.Column(database.String(50))
+    message = database.Column(database.Text)
 
     def __init__(self, cid, timestamp, sender_id, message):
         self.cid = cid
@@ -1048,8 +1048,6 @@ def send_message():
         response.headers["Content-Type"] = "application/json"
         return response
 
-    message = message[:50]
-
     current_chat_id = ChatRoom.at_chat(current_user.get_id())
     if ( current_chat_id ):
         chat_room = ChatRoom.get_chat(current_chat_id)
@@ -1358,7 +1356,6 @@ def send_private_message(user_id=None):
     action = "com.lespi.aki.receivers.INCOMING_PRIVATE_MESSAGE"
     message = data.get('message', None)
     if ( message != None ):
-        message = message[:50]
         private_chat_room.add_message(current_id, message, \
           (time.time() * 1000000), True)
     else:
