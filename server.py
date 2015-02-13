@@ -28,7 +28,7 @@ class StoredUser(database.Model):
     __tablename__ = 'person'
     id = database.Column(database.Integer, primary_key=True)
     uid = database.Column(database.String(20), unique=True)
-    nickname = database.Column(database.String(50))
+    nickname = database.Column(database.String(13))
     gender = database.Column(database.String(50))
     first_name = database.Column(database.String(50))
     full_name = database.Column(database.String(50))
@@ -686,8 +686,8 @@ def send_presence(user_id):
 
     nickname = data.get('nickname', None)
     if ( nickname != None ):
-        if ( len(nickname) > 50 ):
-            nickname = nickname[:50]
+        if ( len(nickname) > 13 ):
+            nickname = nickname[:13]
         user_data["nickname"] = nickname
 
     anonymous = data.get('anonymous', None)
