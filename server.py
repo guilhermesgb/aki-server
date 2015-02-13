@@ -521,7 +521,8 @@ class PrivateChatRoom:
             chat_id  = "chat-" + uid1 + uid2
         else:
             chat_id  = "chat-" + uid2 + uid1
-        return PrivateChatRoom.chats.get(chat_id, PrivateChatRoom(uid1, uid2))
+        chat_room = PrivateChatRoom.chats.get(chat_id, None)
+        return chat_room if chat_room != None else PrivateChatRoom(uid1, uid2)
 
 class MutualInterest(database.Model):
 
@@ -1418,12 +1419,6 @@ def get_private_messages(user_id=None, amount=10):
         'next': str(int(next)).replace("L", "") if next else None,
         'finished': finished
     }
-
-#    anonymous = {} #TODO get this back
-#    for uid in private_chat_room.is_anonymous:
-#        if ( private_chat_room.is_anonymous[uid] != None ):
-#            anonymous[uid] = private_chat_room.is_anonymous[uid]
-#    response['anonymous'] = anonymous
     response['anonymous'] = private_chat_room.is_anonymous
 
     response = make_response(json.dumps(response), 200)
