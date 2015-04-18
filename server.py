@@ -1376,7 +1376,7 @@ def send_private_message(current_id=None, user_id=None):
 
 @server.route('/private_message/<current_id>/<user_id>/<int:amount>', methods=['GET'])
 @server.route('/private_message/<current_id>/<user_id>', methods=['GET'])
-@login_required
+#@login_required
 def get_private_messages(current_id=None, user_id=None, amount=10):
 
     #current_id = current_user.get_id()
