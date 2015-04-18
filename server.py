@@ -1295,7 +1295,7 @@ def delete_mutual(user_id=None):
     response.headers["Content-Type"] = "application/json"
     return response
 
-def warn_about_private_message(sender_id, chat_id, anonymous, action):
+def warn_about_private_message(sender_id, chat_id, anonymous, action, message):
 
     headers = {
         "X-Parse-Application-Id": os.environ.get("PARSE_APPLICATION_ID", None),
@@ -1306,6 +1306,7 @@ def warn_about_private_message(sender_id, chat_id, anonymous, action):
     data = {
         "from": sender_id,
         "action": action,
+        "message": message
     }
 
     if ( anonymous != None ):
@@ -1366,7 +1367,7 @@ def send_private_message(current_id=None, user_id=None):
         private_chat_room.set_anonymous(current_id, anonymous)
 
     p = Process(target=warn_about_private_message,
-      args=(current_id, private_chat_room.cid, anonymous, action))
+      args=(current_id, private_chat_room.cid, anonymous, action, message))
     p.daemon = True
     p.start()
 
