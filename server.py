@@ -854,7 +854,7 @@ def send_skip():
         p.start()
     else:
         response = make_response(json.dumps({'server':'{} is not in a chat room'.format(user_id), 'code':'error'}), 200)
-    logout_user()
+    #logout_user()
 
     response = make_response(json.dumps({'server':'{} just left'.format(user_id), 'code':'ok'}), 200)
     response.headers["Content-Type"] = "application/json"
@@ -896,7 +896,7 @@ def send_exit():
         p.start()
     else:
         response = make_response(json.dumps({'server':'{} is not in a chat room'.format(user_id), 'code':'error'}), 200)
-    logout_user()
+    #logout_user()
 
     response = make_response(json.dumps({'server':'{} just left'.format(user_id), 'code':'ok'}), 200)
     response.headers["Content-Type"] = "application/json"
