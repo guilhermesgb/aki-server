@@ -1,7 +1,7 @@
 from flask import Flask, make_response, request, send_from_directory
 from flask.ext.login import LoginManager, login_user, logout_user,\
 login_required, current_user, UserMixin
-from flask.ext.sqlalchemy import SQLAlchemy, Session
+from flask.ext.sqlalchemy import SQLAlchemy
 from sqlalchemy.orm.exc import NoResultFound, MultipleResultsFound
 from werkzeug import secure_filename
 
