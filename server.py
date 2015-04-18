@@ -854,7 +854,7 @@ def send_skip():
         p.start()
     else:
         response = make_response(json.dumps({'server':'{} is not in a chat room'.format(user_id), 'code':'error'}), 200)
-    #logout_user()
+    logout_user()
 
     response = make_response(json.dumps({'server':'{} just left'.format(user_id), 'code':'ok'}), 200)
     response.headers["Content-Type"] = "application/json"
@@ -896,7 +896,7 @@ def send_exit():
         p.start()
     else:
         response = make_response(json.dumps({'server':'{} is not in a chat room'.format(user_id), 'code':'error'}), 200)
-    #logout_user()
+    logout_user()
 
     response = make_response(json.dumps({'server':'{} just left'.format(user_id), 'code':'ok'}), 200)
     response.headers["Content-Type"] = "application/json"
@@ -1328,9 +1328,9 @@ def warn_about_private_message(sender_id, chat_id, anonymous, action):
     else:
         logging.info("Cannot send message to Parse push notifications system")
 
-@server.route('/private_message/<user_id>', methods=['POST'])
-@login_required
-def send_private_message(user_id=None):
+@server.route('/private_message/<current_id>/<user_id>', methods=['POST'])
+#@login_required
+def send_private_message(current_id=None, user_id=None):
 
     try:
         data = request.json
@@ -1348,7 +1348,7 @@ def send_private_message(user_id=None):
         response.headers["Content-Type"] = "application/json"
         return response
 
-    current_id = current_user.get_id()
+    #current_id = current_user.get_id()
     #TODO only allow this if current_user_id has mutual interest with user_id
 
     private_chat_room = PrivateChatRoom.get_chat(current_id, user_id)
@@ -1374,12 +1374,12 @@ def send_private_message(user_id=None):
     response.headers["Content-Type"] = "application/json"
     return response
 
-@server.route('/private_message/<user_id>/<int:amount>', methods=['GET'])
-@server.route('/private_message/<user_id>', methods=['GET'])
+@server.route('/private_message/<current_id>/<user_id>/<int:amount>', methods=['GET'])
+@server.route('/private_message/<current_id>/<user_id>', methods=['GET'])
 @login_required
-def get_private_messages(user_id=None, amount=10):
+def get_private_messages(current_id=None, user_id=None, amount=10):
 
-    current_id = current_user.get_id()
+    #current_id = current_user.get_id()
     #TODO only allow this if current_user_id has mutual interest with user_id
 
     private_chat_room = PrivateChatRoom.get_chat(current_id, user_id)
