@@ -12,7 +12,7 @@ import os
 
 class User(UserMixin):
 
-    MAX_INACTIVE_TIME = 1 * 60 #10 minutes
+    MAX_INACTIVE_TIME = 7 * 60 #7 minutes
     users = {}
 
     def __init__(self, user_id, nickname=None, gender="unknown", \
