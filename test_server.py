@@ -1,6 +1,6 @@
 import subprocess, unittest, json, time, os
 from multiprocessing import Process
-from request_utils import send_request
+from server.request_utils import send_request
 
 SERVER_URL = "http://0.0.0.0:5000"
 
@@ -14,17 +14,7 @@ def start_server():
     time.sleep(3)
 
 def do_stop_server():
-    auth = os.environ.get("SHUTDOWN_AUTHORIZATION", None)
-    if ( auth == None ):
-        subprocess.call(["fuser", "-k", "5000/tcp"])
-    else:
-        payload = {
-            "authorization": auth,
-        }
-        response = prepare_and_send_request('POST', '/shutdown',
-            client='_1234567890', payload=payload)
-        if ( response['code'] != "ok" ):
-            subprocess.call(["fuser", "-k", "5000/tcp"])
+    subprocess.call(["fuser", "-k", "5000/tcp"])
 
 def stop_server():
     p = Process(target=do_stop_server)
