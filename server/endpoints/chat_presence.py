@@ -204,6 +204,10 @@ def send_stealth_presence(user_id):
         if ( current_user.get_id() != user_id ):
             response = make_response(json.dumps({'server':'stealth presence fail (you are someone else)', 'code':'error'}), 200)
         else:
+            _u = User.get_stored(user_id)
+            _u.active = False
+            db.session.add(_u)
+            db.session.commit()
             u = User.get(user_id)
             response = {
                 'server':'stealth presence sent (already authenticated)',
@@ -216,6 +220,10 @@ def send_stealth_presence(user_id):
 
         u = User(user_id, active=False)
         if ( login_user(u, remember=True) ):
+            _u = User.get_stored(user_id)
+            _u.active = False
+            db.session.add(_u)
+            db.session.commit()
             response = {
                 'server':'stealth presence sent (just authenticated)',
                 'code':'ok'
