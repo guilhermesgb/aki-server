@@ -3,14 +3,14 @@ from ..users import User
 from ..chat_rooms_private import PrivateChatRoom
 from ..request_utils import send_request
 from flask import make_response, request
-#from flask.ext.login import login_required
+from flask.ext.login import login_required, current_user
 from multiprocessing import Process
 import os, json, time
 
 
-@app.route('/private_message/<current_id>/<user_id>', methods=['POST'])
-#@login_required
-def send_private_message(current_id=None, user_id=None):
+@app.route('/private_message/<user_id>', methods=['POST'])
+@login_required
+def send_private_message(user_id=None):
 
     try:
         data = request.json
@@ -28,8 +28,7 @@ def send_private_message(current_id=None, user_id=None):
         response.headers["Content-Type"] = "application/json"
         return response
 
-    #this below was disabled because this method is no longer login_required
-    #current_id = current_user.get_id()
+    current_id = current_user.get_id()
 
     #TODO only allow this if current_user_id has mutual interest with user_id
 

@@ -1,17 +1,17 @@
 from .. import app
 from ..chat_rooms_private import PrivateChatRoom
+from messages_get import get_msgs_after_tstamp
 from flask import make_response, request
-#from flask.ext.login import login_required
+from flask.ext.login import login_required, current_user
 import json, heapq
 
 
-@app.route('/private_message/<current_id>/<user_id>/<int:amount>', methods=['GET'])
-@app.route('/private_message/<current_id>/<user_id>', methods=['GET'])
-#@login_required
+@app.route('/private_message/<user_id>/<int:amount>', methods=['GET'])
+@app.route('/private_message/<user_id>', methods=['GET'])
+@login_required
 def get_private_messages(current_id=None, user_id=None, amount=10):
 
-    #this below was disabled because this method is no longer login_required
-    #current_id = current_user.get_id()
+    current_id = current_user.get_id()
 
     #TODO only allow this if current_user_id has mutual interest with user_id
 

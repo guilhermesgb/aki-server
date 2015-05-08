@@ -195,4 +195,36 @@ def do_send_presence(chat_ids, user_data):
     }
 
     response = send_request('POST', "https://api.parse.com/1/push",
-         payload=payload, headers=headers) 
+         payload=payload, headers=headers)
+
+@app.route('/stealth/<user_id>', methods=['POST'])
+def send_stealth_presence(user_id):
+
+    if ( current_user.is_authenticated() ):
+        if ( current_user.get_id() != user_id ):
+            response = make_response(json.dumps({'server':'stealth presence fail (you are someone else)', 'code':'error'}), 200)
+        else:
+            u = User.get(user_id)
+            response = {
+                'server':'stealth presence sent (already authenticated)',
+                'code':'ok'
+            }
+            if ( u.flag_mutual_interest ):
+                response["update_mutual_interests"] = True
+            response = make_response(json.dumps(response), 200)
+    else:
+
+        u = User(user_id, active=False)
+        if ( login_user(u, remember=True) ):
+            response = {
+                'server':'stealth presence sent (just authenticated)',
+                'code':'ok'
+            }
+            if ( u.flag_mutual_interest ):
+                response["update_mutual_interests"] = True
+            response = make_response(json.dumps(response), 200)
+        else:
+            response = make_response(json.dumps({'server':'stealth presence fail (login fail)', 'code':'error'}), 200)
+
+    response.headers["content-type"] = "application/json"
+    return response

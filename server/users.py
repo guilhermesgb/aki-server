@@ -15,8 +15,8 @@ class User(UserMixin):
     MAX_INACTIVE_TIME = 1 * 60 #10 minutes
     users = {}
 
-    def __init__(self, user_id, nickname, gender, \
-      first_name, full_name, anonymous, active=True):
+    def __init__(self, user_id, nickname=None, gender="unknown", \
+      first_name=None, full_name=None, anonymous=True, active=True):
         self.uid = user_id
         self.anonymous_setting = anonymous
         self.active = active

@@ -1,5 +1,5 @@
 from flask import Flask, make_response
-from flask.ext.login import LoginManager, UserMixin
+from flask.ext.login import LoginManager
 from flask.ext.sqlalchemy import SQLAlchemy
 import os, json, logging
 
