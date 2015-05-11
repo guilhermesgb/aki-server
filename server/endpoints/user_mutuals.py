@@ -71,16 +71,10 @@ def delete_mutual(user_id=None):
 
     current_id = current_user.get_id()
 
-    u = User.get(user_id)
-    if ( u == None ):
-        response = make_response(json.dumps({'server':'{} does not exist'.format(user_id), 'code':'error'}), 200)
-        response.headers["Content-Type"] = "application/json"
-        return response
     if ( current_id == user_id ):
         response = make_response(json.dumps({'server':'a mutual between {} and oneself makes no sense'.format(user_id), 'code':'error'}), 200)
         response.headers["Content-Type"] = "application/json"
         return response
-
 
     mutuals = MutualInterest.query.filter(
         MutualInterest.uid1 == current_id,
@@ -105,7 +99,7 @@ def delete_mutual(user_id=None):
 
     db.session.commit()
 
-    if ( u ):
+    if ( User.get(user_id) ):
         u.flag_mutual_interest = True
 
     response = make_response(json.dumps({
