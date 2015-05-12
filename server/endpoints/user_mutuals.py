@@ -99,7 +99,8 @@ def delete_mutual(user_id=None):
 
     db.session.commit()
 
-    if ( User.get(user_id) ):
+    u = User.get(user_id)
+    if ( u ):
         u.flag_mutual_interest = True
 
     response = make_response(json.dumps({
