@@ -4,7 +4,7 @@ import os, sys, math, heapq, time, uuid
 
 class ChatRoom:
 
-    MIN_RADIUS = 0.1 #in kmeters
+    MIN_RADIUS = 0.15 #in kmeters, so 150 meters
     MAX_USERS_PER_ROOM = 7
     UNSTABLE_ROOM_THRESHOLD = 3
     chats = {}
