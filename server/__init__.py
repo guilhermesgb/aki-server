@@ -73,4 +73,4 @@ def before_request():
         if ( auth == None or
           app.config['SERVER_PASS'] == None or
           auth != app.config['SERVER_PASS'] ):
-            return unauthorized(auth, app.config['SERVER_PASS'])
+            return unauthorized()
