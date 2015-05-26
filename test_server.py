@@ -27,6 +27,8 @@ def prepare_and_send_request(method, endpoint, client, payload=None):
         "Content-Type": "application/json",
         "Accept": "application/json"
     }
+    if ( method == "POST" and payload == None ):
+        payload = { "auth": os.environ.get("SERVER_PASS", os.urandom(24)) }
     response = send_request(method, SERVER_URL + endpoint,
         payload=payload, headers=headers, client=client)
     return response
