@@ -13,3 +13,9 @@ deploy:
     secure: fKhh5eLlJKVS7zJhF0toXHCJjqXfUEufWrj5xuzUl1dbNx28NhkuXpX/ix9PzqYefzeTCtmPf6aNxW9X6aKbupDT/5XQCte5Q/TW52E1j4KxT4QaqAoW9fCeKc0bJZ7Yuq2vAnj5dfCpc5oOJoq8cunk0Spsnh8tsVF+e8VMOcQ=
   app: lespi-server
   strategy: git
+env:
+  global:
+  - secure: ZNiRMgbOGPlGyeI3EfX7ER+7l+axdaeK1p3+5biIKHBTgpoQIjFUSX+y5YQHC0BFYhpbs3tWt/L5rejcMio/fRBsFxer6fHUroLwoaCjR3505XOi0c3yl3HSNJh3tea6El6In51HVp3BJ5i11UgCcueZWp3Zqznfa4SnhV/PMBc=
+  - secure: UXTePT3HqLG31f6SedhFr5MuOhc9TGgA4ThX6q5MHAGQj/jgT3ONq2G02d0o3qH0B6WmBPH5k7SAYluzXi+j4Fh+suO2awtHyY//ovuW4SVBsTd/DHbpbOhbUS2DrB/gVcHYHlQSeDBxGLr1Pv7svK32yEfOjdArKFuhwMrb3MM=
+  - secure: Txi1XdSUpwabnuXnoH2xOZFu6qIwBrqk049jNR08rlibxZKq5wlgpoe2cTSli1Kzh9Jk4ixlp0a6pJY7ZmbZtkEt1sjFWLE1G0Mgv+onP8gO/D45FaegsYTaMZvT8EgLyfFsEmBR3GK87VSNVyBAih5wRe9B7Sj3ABuCGrW8L84=
+  - secure: A/IZ8HyW74ykEjsApMvUv+GySZIuK54GhCoJacU4Ix/CTizgt9W5roKtbTVH5O7sYYxXMnqNSPHY80Pr+seaY1/FHE8rpmkYfteSIb2ixeNlfF6aQRM6kUy+OksVGhXuXryAHFGxSPJ53xazXaNP3YkG/mAcWZVqVvKqH/XPhlc=
