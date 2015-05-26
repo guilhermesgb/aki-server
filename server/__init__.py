@@ -70,7 +70,7 @@ def before_request():
             return response
 
         auth = data.get('auth', None)
-        if ( auth == None or
+        if (auth == None or
           app.config['SERVER_PASS'] == None or
-          auth != app.config['SERVER_PASS'] ):
+          auth != app.config['SERVER_PASS']):
             return unauthorized()
