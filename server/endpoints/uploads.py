@@ -6,7 +6,7 @@ from werkzeug import secure_filename
 import os, json
 
 
-@app.route('/upload', methods=['POST'])
+@app.route('/upload', methods=['PUT'])
 @login_required
 def upload_file():
 

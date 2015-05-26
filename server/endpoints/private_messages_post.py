@@ -12,22 +12,7 @@ import os, json, time
 @login_required
 def send_private_message(user_id=None):
 
-    try:
-        data = request.json
-        if ( data == None ):
-            response = make_response(json.dumps({'server':'payload must be valid json', 'code':'error'}), 200)
-            response.headers["Content-Type"] = "application/json"
-            return response
-        data = dict(data)
-        if ( data == None ):
-            response = make_response(json.dumps({'server':'payload must be valid json', 'code':'error'}), 200)
-            response.headers["Content-Type"] = "application/json"
-            return response
-    except:
-        response = make_response(json.dumps({'server':'payload must be valid json', 'code':'error'}), 200)
-        response.headers["Content-Type"] = "application/json"
-        return response
-
+    data = request.json
     current_id = current_user.get_id()
 
     #TODO only allow this if current_user_id has mutual interest with user_id

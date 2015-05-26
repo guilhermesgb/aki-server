@@ -1,4 +1,4 @@
-from flask import Flask, make_response
+from flask import Flask, make_response, request
 from flask.ext.login import LoginManager
 from flask.ext.sqlalchemy import SQLAlchemy
 import os, json, logging
@@ -10,6 +10,7 @@ app.secret_key = os.environ.get("SECRET_KEY", os.urandom(24))
 app.config['SQLALCHEMY_DATABASE_URI'] = os.environ.get(
     'DATABASE_URL', 'postgresql:///local_database')
 app.config['UPLOADS_FOLDER'] = os.path.join(os.getcwd(), 'server', 'uploads')
+app.config['SERVER_PASS'] = os.environ.get('SERVER_PASS', os.urandom(24))
 
 login_manager = LoginManager(app)
 db = SQLAlchemy(app)
@@ -46,3 +47,30 @@ def unauthorized():
     response.headers["WWW-Authenticate"] = "Basic realm=\"you must authenticate with Basic method\""
     response.headers["Content-Type"] = "application/json"
     return response
+
+@app.before_request
+def before_request():
+    
+    if ( request.method in ["POST", "DELETE"] ):
+
+        try:
+            data = request.json
+            if ( data == None ):
+                response = make_response(json.dumps({'server':'payload must be valid json', 'code':'error'}), 200)
+                response.headers["Content-Type"] = "application/json"
+                return response
+            data = dict(data)
+            if ( data == None ):
+                response = make_response(json.dumps({'server':'payload must be valid json', 'code':'error'}), 200)
+                response.headers["Content-Type"] = "application/json"
+                return response
+        except:
+            response = make_response(json.dumps({'server':'payload must be valid json', 'code':'error'}), 200)
+            response.headers["Content-Type"] = "application/json"
+            return response
+
+        auth = data.get('auth', None)
+        if ( auth == None or
+          app.config['SERVER_PASS'] == None or
+          auth != app.config['SERVER_PASS'] ):
+            return unauthorized(auth, app.config['SERVER_PASS'])

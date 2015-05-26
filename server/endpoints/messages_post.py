@@ -12,22 +12,7 @@ import os, json, copy
 @login_required
 def send_message():
 
-    try:
-        data = request.json
-        if ( data == None ):
-            response = make_response(json.dumps({'server':'payload must be valid json', 'code':'error'}), 200)
-            response.headers["Content-Type"] = "application/json"
-            return response
-        data = dict(data)
-        if ( data == None ):
-            response = make_response(json.dumps({'server':'payload must be valid json', 'code':'error'}), 200)
-            response.headers["Content-Type"] = "application/json"
-            return response
-    except:
-        response = make_response(json.dumps({'server':'payload must be valid json', 'code':'error'}), 200)
-        response.headers["Content-Type"] = "application/json"
-        return response
-
+    data = request.json
     message = data.get('message', None)
 
     if ( message == None ):
