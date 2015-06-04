@@ -25,6 +25,7 @@ def index():
         chat_room = ChatRoom.get_chat(chat_id)
         chats.append({
             "ids": chat_room.ids,
+            "tags": chat_room.tags,
             "center": chat_room.center,
             "radius": chat_room.radius,
             "members": chat_room.members,

@@ -6,3 +6,4 @@ Werkzeug==0.8.3
 requests==2.1.0
 psycopg2==2.5.3
 gunicorn==0.17.2
+foursquare==2015.02.02

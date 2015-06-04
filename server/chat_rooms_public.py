@@ -1,5 +1,6 @@
 from request_utils import send_request
 from multiprocessing import Process
+from foursquare import Foursquare
 import os, sys, math, heapq, time, uuid
 
 class ChatRoom:
@@ -14,6 +15,11 @@ class ChatRoom:
 
     def __init__(self, location, user_id):
 
+        _4square = Foursquare(
+            client_id=os.environ.get('FOURSQUARE_CLIENT_ID', None),
+            client_secret=os.environ.get('FOURSQUARE_CLIENT_SECRET', None)
+        )
+
         new_id = "chat-" + str(uuid.uuid4())
         while ( ChatRoom.get_chat(new_id) != None ):
             new_id = "chat-" + str(uuid.uuid4())
@@ -23,7 +29,7 @@ class ChatRoom:
         self.center = location
         self.radius = ChatRoom.MIN_RADIUS
         self.messages = []
-        self.tag = None
+        self.tags = None
 
         old_messages = []
         to_clean = []
@@ -37,13 +43,14 @@ class ChatRoom:
             centers_distance = ChatRoom.distance(self.center, chat_room.center)
             if ( centers_distance <= self.radius + chat_room.radius or
                     ( centers_distance <= ChatRoom.INITIAL_MAX_RADIUS and
-                        ChatRoom.tags_match(self, chat_room) ) ):
+                        ChatRoom.tags_match(self, chat_room, _4square) ) ):
                 for chat_id in chat_room.ids:
                     if ( chat_id not in ChatRoom.chat2chat ):
                         ChatRoom.chat2chat[chat_id] = self.ids[0]
                     if ( chat_id in ChatRoom.chats ):
                         to_clean.append(chat_id)
                 self.ids.extend(chat_room.ids)
+                self.tags = ChatRoom.common_tags(self, chat_room)
                 self.members.update(chat_room.members)
                 old_messages.append(chat_room.messages)
 
@@ -105,6 +112,8 @@ class ChatRoom:
                 radius = distance + (ChatRoom.MIN_RADIUS / 3)
 
         self.radius = radius
+
+        ChatRoom.assign_tags(self, None)
 
 #TODO make this useful, currently not sending it because Android client
 # makes no real use of this information
@@ -214,8 +223,65 @@ class ChatRoom:
         return closest
 
     @staticmethod
-    def tags_match(chat_room1, chat_room2):
-        return False
+    def assign_tags(chat_room, _4square):
+        if ( _4square == None ):
+            _4square = Foursquare(
+                client_id=os.environ.get('FOURSQUARE_CLIENT_ID', None),
+                client_secret=os.environ.get('FOURSQUARE_CLIENT_SECRET', None)
+            )
+        if ( chat_room.tags != None and chat_room.tags != 'unknown' ):
+            return
+        center = chat_room.center
+        ll = "{}, {}".format(center["lat"], center["long"])
+        chat_room.tags = 'unknown'
+        try:
+            result = _4square.venues.search(params={
+              'll': ll,
+              'radius': '15', 'limit': 3
+            })
+            if ( len(result['venues']) > 0 ):
+                tags = [ x['name'] for x in result['venues'] ]
+                chat_room.tags = tags
+        except:
+            pass
+
+    @staticmethod
+    def tags_match(chat_room1, chat_room2, _4square):
+        targets = []
+        if ( chat_room1.tags == None ):
+            targets.append(chat_room1)
+        if ( chat_room2.tags == None ):
+            targets.append(chat_room2)
+        for chat_room in targets:
+            ChatRoom.assign_tags(chat_room, _4square)
+        if ( chat_room1.tags == 'unknown'
+                or chat_room2.tags == 'unknown' ):
+            return False
+        veredict = False
+        for tag1 in chat_room1.tags:
+            tag1 = tag1.replace(' ','').lower()
+            for tag2 in chat_room2.tags:
+                tag2 = tag2.replace(' ','').lower()
+                veredict = veredict or ( (tag1 == tag2)
+                    or (tag1 in tag2) or (tag2 in tag1) )
+        return veredict
+
+    @staticmethod
+    def common_tags(chat_room1, chat_room2):
+        if ( chat_room1.tags == None or chat_room1.tags == 'unknown' ):
+            return None
+        if ( chat_room2.tags == None or chat_room2.tags == 'unknown' ):
+            return None
+        tags = []
+        for tag1 in chat_room1.tags:
+            _tag1 = tag1.replace(' ','').lower()
+            for tag2 in chat_room2.tags:
+                _tag2 = tag2.replace(' ','').lower()
+                if ( (tag1 == tag2) or (tag1 in tag2) ):
+                    tags.append(tag1)
+                elif ( tag2 in tag1 ):
+                    tags.append(tag2)
+        return tags
 
     @staticmethod
     def at_chat(user_id):

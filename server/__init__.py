@@ -11,6 +11,8 @@ app.config['SQLALCHEMY_DATABASE_URI'] = os.environ.get(
     'DATABASE_URL', 'postgresql:///local_database')
 app.config['UPLOADS_FOLDER'] = os.path.join(os.getcwd(), 'server', 'uploads')
 app.config['SERVER_PASS'] = os.environ.get('SERVER_PASS', os.urandom(24))
+app.config['FOURSQUARE_CLIENT_ID'] = os.environ['FOURSQUARE_CLIENT_ID']
+app.config['FOURSQUARE_CLIENT_SECRET'] = os.environ['FOURSQUARE_CLIENT_SECRET']
 
 login_manager = LoginManager(app)
 db = SQLAlchemy(app)
