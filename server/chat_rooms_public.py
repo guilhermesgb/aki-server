@@ -7,6 +7,7 @@ class ChatRoom:
     MIN_RADIUS = 0.15 #in kmeters, so 150 meters
     MAX_USERS_PER_ROOM = 7
     UNSTABLE_ROOM_THRESHOLD = 3
+    INITIAL_MAX_RADIUS = 1.5 #1.5 kmeters
     chats = {}
     user2chat = {}
     chat2chat = {}
@@ -22,6 +23,7 @@ class ChatRoom:
         self.center = location
         self.radius = ChatRoom.MIN_RADIUS
         self.messages = []
+        self.tag = None
 
         old_messages = []
         to_clean = []
@@ -32,7 +34,10 @@ class ChatRoom:
                 continue
             if ( chat_room.is_stable() ):
                 continue
-            if ( ChatRoom.distance(self.center, chat_room.center) <= self.radius + chat_room.radius ):
+            centers_distance = ChatRoom.distance(self.center, chat_room.center)
+            if ( centers_distance <= self.radius + chat_room.radius or
+                    ( centers_distance <= ChatRoom.INITIAL_MAX_RADIUS and
+                        ChatRoom.tags_match(self, chat_room) ) ):
                 for chat_id in chat_room.ids:
                     if ( chat_id not in ChatRoom.chat2chat ):
                         ChatRoom.chat2chat[chat_id] = self.ids[0]
@@ -97,7 +102,7 @@ class ChatRoom:
             location = self.members[user_id]["location"]
             distance = ChatRoom.distance(center, location)
             if ( distance > radius ):
-                radius = distance
+                radius = distance + (ChatRoom.MIN_RADIUS / 3)
 
         self.radius = radius
 
@@ -117,9 +122,10 @@ class ChatRoom:
         if ( user_id in self.members.keys() ):
             del self.members[user_id]
             del ChatRoom.user2chat[user_id]
-        if ( len(self.members.keys()) != 0 ):
-            self.update_center_and_radius()
-        else:
+#        if ( len(self.members.keys()) != 0 ):
+#            self.update_center_and_radius()
+#        else:
+        if ( len(self.members.keys()) == 0 ):
             ChatRoom.remove_chat(self.ids[0])
 
     def update_user(self, user_id, user_data):
@@ -206,6 +212,10 @@ class ChatRoom:
                     closest = chat_room
                     min_distance = distance
         return closest
+
+    @staticmethod
+    def tags_match(chat_room1, chat_room2):
+        return False
 
     @staticmethod
     def at_chat(user_id):
