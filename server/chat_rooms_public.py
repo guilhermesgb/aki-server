@@ -232,11 +232,10 @@ class ChatRoom:
         if ( chat_room.tags != None and chat_room.tags != 'unknown' ):
             return
         center = chat_room.center
-        ll = "{}, {}".format(center["lat"], center["long"])
         chat_room.tags = 'unknown'
         try:
             result = _4square.venues.search(params={
-              'll': ll,
+              'll': "{}, {}".format(center["lat"], center["long"]),
               'radius': '15', 'limit': 3
             })
             if ( len(result['venues']) > 0 ):
