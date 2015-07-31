@@ -53,7 +53,7 @@ def unauthorized():
 @app.before_request
 def before_request():
     
-    if ( request.method in ["POST", "DELETE"] ):
+    if ( request.method in ["POST"] ):
 
         try:
             data = request.json

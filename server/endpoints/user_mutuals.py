@@ -65,7 +65,7 @@ def get_mutual():
     response.headers["Content-Type"] = "application/json"
     return response
 
-@app.route('/mutual/<user_id>', methods=['DELETE'])
+@app.route('/mutual/remove/<user_id>', methods=['POST'])
 @login_required
 def delete_mutual(user_id=None):
 
